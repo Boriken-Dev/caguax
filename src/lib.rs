@@ -11,6 +11,7 @@
 
 extern crate alloc;
 
+pub mod config;
 pub mod connection;
 pub mod credential;
 pub mod error;
@@ -21,6 +22,7 @@ pub mod pac;
 pub mod record;
 pub mod route;
 pub mod rules;
+pub mod server;
 pub mod settings;
 pub mod upstream;
 
@@ -38,6 +40,8 @@ pub use route::{
     UpstreamSpec,
 };
 pub use rules::{CustomMatcher, Matcher, PortSpec};
+pub use server::blocking;
+pub use server::{OpenOptions, RelaySession, Server, ServerBuilder, Tunnel, TunnelBuilder};
 pub use settings::{CaSettings, InterceptSettings, ServerSettings};
 pub use upstream::{ConnectOptions, Egress, UpstreamStream};
 
