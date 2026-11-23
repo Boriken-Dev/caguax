@@ -1,0 +1,32 @@
+        [package]
+        name = "netproxy"
+        version = "0.0.0-alpha.0"
+        description = "A local proxy server that routes each request by rules, through the system's proxy, an upstream proxy or directly, and the netproxy command line"
+        readme = "README.md"
+        edition = "2024"
+        rust-version = "1.89"
+        license = "MIT OR Apache-2.0"
+        repository = "https://github.com/Boriken-Dev/netproxy-rs"
+        keywords = ["proxy", "socks", "http-proxy", "pac"]
+        categories = ["network-programming", "command-line-utilities"]
+        # Git dependencies cannot be published to crates.io.
+        publish = false
+        exclude = [".*", "*.local.*", "/tools/"]
+
+        [package.metadata.docs.rs]
+        all-features = true
+        rustdoc-args = ["--cfg", "docsrs"]
+
+[[bin]]
+name = "netproxy"
+path = "src/main.rs"
+required-features = ["cli"]
+
+        [features]
+        default = []
+# The `netproxy` command line.
+cli = []
+
+        [dependencies]
+
+        [dev-dependencies]
