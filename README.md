@@ -6,11 +6,27 @@
 [![Docs](https://img.shields.io/docsrs/caguax)](https://docs.rs/caguax)
 [![CI](https://img.shields.io/github/actions/workflow/status/Boriken-Dev/caguax/test.yaml)](https://github.com/Boriken-Dev/caguax/actions/workflows/test.yaml)
 
-**A local proxy that routes each request the way you say.** A local proxy server that routes each request by rules, through the system's proxy, an upstream proxy or directly, and the caguax command line.
+**A local proxy that routes each request the way you say.** Rules decide, per request, whether it
+goes direct, through the system's proxy or a named upstream, with the proxy owning the TLS (a
+client certificate from a keystore, or interception), or is rejected. The library embeds the
+server; the `caguax` command runs it from a configuration file. See the
+[API header](https://github.com/Boriken-Dev/caguax/blob/main/AGENTS.md) for every item.
 
 ## Features
 
-- Under construction.
+- HTTP proxy listener: `CONNECT`, forwarded requests with keep-alive, WebSocket upgrades and
+  `/proxy.pac`; tunnel listeners that give a plain TCP client mutual TLS to a fixed target.
+- Rules on host (glob, regex, `.domain`), network, port, scheme, path and listener, combined with
+  `&`, `|` and `!`; the first match decides.
+- Upstreams: the system's settings, the proxy variables, a PAC file, a proxy URL or a PAC result
+  (HTTP, HTTPS and SOCKS proxies, Negotiate with the `negotiate` feature), failing over across
+  answers.
+- Client certificates from the operating system's keystores (Windows CNG, macOS Keychain, PKCS#11)
+  or PEM and PKCS#12 files; PINs and passwords only from the environment, a file or the keystore.
+- TLS interception from a name-constrained CA the proxy makes for the hosts its rules intercept.
+- Recording of every relayed session to the log or to a pcap capture; a key log for Wireshark.
+- Configuration in TOML, JSON, YAML or INI, read again on `SIGHUP`.
+- Every bound, timeout, count and size is a setting with a default.
 
 ## Installation
 
@@ -20,18 +36,136 @@ cargo add --git https://github.com/Boriken-Dev/caguax caguax
 
 | Feature | Adds | Default |
 | --- | --- | --- |
+| `cli` | the `caguax` command (`clap`, `tracing-subscriber`, `rpassword`) | yes |
+| `regex` | `Matcher::HostRegex`, `Matcher::Path` and the `re:` rule spelling | yes |
+| `pcap` | `record::PcapRecorder` and `record = "file.pcap"` | no |
+| `yaml` | YAML configuration files | no |
+| `ini` | INI configuration files | no |
+| `pkcs11` | PKCS#11 credentials and `caguax cert --backend pkcs11` | no |
+| `negotiate` | Negotiate and NTLM login to upstream proxies | no |
+
+A library user turns the default features off: `default-features = false, features = ["regex"]`.
 
 ## Quick start
 
-Under construction.
+A proxy on a free loopback port that sends everything direct except one blocked domain:
+
+```rust
+use caguax::{Route, Router, Rule, Server};
+
+# #[tokio::main]
+# async fn main() -> Result<(), caguax::Error> {
+let router = Router::builder()
+    .rule(Rule::parse("*.blocked.example", Route::reject())?)
+    .build();
+let server = Server::builder(router).start().await?;
+println!("proxy on http://{}", server.addresses()[0]);
+server.shutdown().await;
+# Ok(())
+# }
+```
+
+From synchronous code, the same server owns a runtime of its own:
+
+```rust
+use caguax::{Router, blocking};
+
+# fn main() -> Result<(), caguax::Error> {
+let server = blocking::Server::builder(Router::new()).start()?;
+let port = server.port();
+server.shutdown();
+# assert!(port > 0);
+# Ok(())
+# }
+```
 
 ## Command line
 
-The `caguax` command (feature `cli`).
+```sh
+caguax --version
+caguax check https://example.com/ --format json
+caguax -c caguax.cfg check api.corp.example:443
+caguax -c caguax.cfg pac
+caguax -c caguax.cfg ca init
+caguax -c caguax.cfg ca show
+```
+
+| Command | Does |
+| --- | --- |
+| `caguax run` | serve until Ctrl-C (`SIGHUP` reads the configuration again); prints `proxy http://HOST:PORT` per listener and `tunnel HOST:PORT -> TARGET` per tunnel |
+| `caguax check TARGET [--listener NAME] [--format text\|json]` | which rule and route a URL or `HOST:PORT` gets, without connecting |
+| `caguax pac [--proxy HOST:PORT]` | the PAC script for the rules |
+| `caguax ca init [--force] [--unconstrained]` | create the interception CA at `[server.ca]`'s paths, name-constrained to the TLS rules |
+| `caguax ca show` | the CA certificate clients must trust |
+| `caguax cert list\|show\|probe` | the client certificates the keystores hold, and a probe of a server with them |
+
+Every command takes `-c/--config FILE` (else `CAGUAX_CONFIG`, else `caguax/caguax.cfg` in the
+user's configuration directory; with no file the defaults apply), `-v`, `-q` and
+`--loglevel [NAME:]LEVEL[,...]` (the log filter is also `CAGUAX_LOG`). Results go to standard
+output, one-line errors to standard error. Exit status: `0` done, `1` failed, `2` the invocation or
+the configuration is wrong, `130` interrupted (`caguax run` stops on Ctrl-C with `0`).
+
+## Configuration
+
+`caguax.cfg` is TOML unless its first line names another format (`#!yaml`, `#!json`, `#!ini`).
+Unknown tables and keys are errors; relative paths are relative to the file.
+
+```toml
+[server]
+listen = "127.0.0.1:3128"
+egress = "system"            # "system" | "env" | "auto" | "direct" | "pac:<location>" | a proxy URL
+connect_timeout = "30s"      # also accepted as `timeout`
+idle_timeout = "5m"
+log_traffic = true
+
+[server.ca]
+certificate = "pki/ca.pem"
+key = "pki/ca.key"
+password_env = "CAGUAX_CA_PASSWORD"
+
+[credentials.work]
+backend = "system"           # "system" | "cng" | "keychain" | "pkcs11" | "pem"
+query = { subject = "alice" }
+pin = "keystore"             # or pin_env = "NAME_OF_A_VARIABLE"; a PIN is never in the file
+
+[[rules]]
+match = ["*.corp.example", "10.0.0.0/8"]
+port = 443
+action = "tls"               # "tls" | "direct" | "reject"
+credential = "work"
+name = "corp"
+
+[[rules]]
+match = "*.blocked.example"
+action = "reject"
+
+[default]
+action = "direct"
+
+[[tunnels]]
+listen = "127.0.0.1:15432"
+target = "db.corp.example:5432"
+credential = "work"
+```
+
+The settings, with their defaults, are listed in the
+[API header](https://github.com/Boriken-Dev/caguax/blob/main/AGENTS.md).
 
 ## API overview
 
-See [AGENTS.md](https://github.com/Boriken-Dev/caguax/blob/main/AGENTS.md).
+| Module | Purpose |
+| --- | --- |
+| `caguax` | the root re-exports: `Server`, `Router`, `Route`, `Rule`, `Matcher`, `Credential`, `Egress` |
+| `caguax::rules`, `route`, `connection` | matchers, routes and the router; what a rule sees |
+| `caguax::upstream` | reaching a destination through an `Egress`, with the route's TLS |
+| `caguax::credential` | client credentials for mutual TLS |
+| `caguax::intercept` | the interceptor, `create_ca`, `permitted_names` |
+| `caguax::record` | recorders: `LogRecorder`, `PcapRecorder` |
+| `caguax::pac` | PAC script generation |
+| `caguax::config` | configuration documents and building a server from one |
+| `caguax::server` | the server, tunnels, relaying; `caguax::blocking` for synchronous code |
+| `caguax::settings` | `ServerSettings` and its tables |
+| `caguax::cli` | the command line (feature `cli`) |
 
 ## Development
 
@@ -39,7 +173,11 @@ See [AGENTS.md](https://github.com/Boriken-Dev/caguax/blob/main/AGENTS.md).
 cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-features
+RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
 ```
+
+Real-peer tests are opt-in: `CAGUAX_TEST_CURL=1` and `CAGUAX_TEST_SQUID=1` with
+`cargo test --all-features -- --include-ignored`.
 
 ### Releasing
 

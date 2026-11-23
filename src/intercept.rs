@@ -1,6 +1,6 @@
 //! TLS interception: the proxy ends the client's TLS with a certificate it mints.
 //!
-//! A `CONNECT` whose route is [`Action::Tls`](crate::Action::Tls) is intercepted: the proxy
+//! A `CONNECT` whose route is [`Action::Tls`] is intercepted: the proxy
 //! connects to the destination first (with the route's client credential), answers `200`,
 //! completes the client's handshake with a leaf issued by its CA for the `CONNECT` host, and
 //! relays the plaintext between the two TLS connections. Clients must trust the CA.
@@ -58,7 +58,7 @@ impl Interceptor {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for a leaf cache of no entries or a leaf validity of zero.
+    /// [`crate::Error::Config`] for a leaf cache of no entries or a leaf validity of zero.
     pub fn new(ca: CertificateAuthority, settings: InterceptSettings) -> Result<Self> {
         if settings.leaf_cache_capacity == 0 || settings.leaf_validity.is_zero() {
             return Err(config(
@@ -102,7 +102,7 @@ impl Interceptor {
     ///
     /// # Errors
     ///
-    /// [`Error::Tls`] when the leaf cannot be issued.
+    /// [`crate::Error::Tls`] when the leaf cannot be issued.
     pub fn server_config(&self, host: &str) -> Result<Arc<rustls::ServerConfig>> {
         {
             let mut cache = self.cache();
@@ -158,8 +158,8 @@ impl Interceptor {
     ///
     /// # Errors
     ///
-    /// [`Error::Tls`] when the leaf cannot be issued, [`Error::Io`] when the handshake fails and
-    /// [`Error::Timeout`] when it takes longer than `timeout`.
+    /// [`crate::Error::Tls`] when the leaf cannot be issued, [`crate::Error::Io`] when the handshake fails and
+    /// [`crate::Error::Timeout`] when it takes longer than `timeout`.
     pub async fn accept<IO>(
         self: &Arc<Self>,
         host: &str,
@@ -281,7 +281,7 @@ fn env_password(name: &str) -> KeyPassword {
 ///
 /// # Errors
 ///
-/// [`Error::Config`] when a path is missing or unreadable; [`Error::Tls`] when the files are not a
+/// [`crate::Error::Config`] when a path is missing or unreadable; [`crate::Error::Tls`] when the files are not a
 /// CA certificate and its key or the password is wrong.
 pub fn load_ca(settings: &CaSettings) -> Result<CertificateAuthority> {
     let (Some(certificate), Some(key)) = (&settings.certificate, &settings.key) else {
@@ -315,7 +315,7 @@ pub fn load_ca(settings: &CaSettings) -> Result<CertificateAuthority> {
 ///
 /// # Errors
 ///
-/// [`Error::Config`] when the rules cannot be bounded and `constrain` is set; [`Error::Tls`] when
+/// [`crate::Error::Config`] when the rules cannot be bounded and `constrain` is set; [`crate::Error::Tls`] when
 /// the CA cannot be made.
 pub fn create_ca(router: &Router, options: CaOptions) -> Result<CertificateAuthority> {
     let mut permitted: Vec<String> = Vec::new();

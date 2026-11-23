@@ -174,7 +174,7 @@ impl Matcher {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for no pattern or an empty one.
+    /// [`crate::Error::Config`] for no pattern or an empty one.
     pub fn host<I, S>(patterns: I) -> Result<Self>
     where
         I: IntoIterator<Item = S>,
@@ -191,7 +191,7 @@ impl Matcher {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for an expression that does not compile.
+    /// [`crate::Error::Config`] for an expression that does not compile.
     #[cfg(feature = "regex")]
     #[cfg_attr(docsrs, doc(cfg(feature = "regex")))]
     pub fn host_regex(pattern: &str, case_insensitive: bool) -> Result<Self> {
@@ -206,7 +206,7 @@ impl Matcher {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for an expression that does not compile.
+    /// [`crate::Error::Config`] for an expression that does not compile.
     #[cfg(feature = "regex")]
     #[cfg_attr(docsrs, doc(cfg(feature = "regex")))]
     pub fn path(pattern: &str) -> Result<Self> {
@@ -217,7 +217,7 @@ impl Matcher {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for none.
+    /// [`crate::Error::Config`] for none.
     pub fn port<I, P>(ports: I) -> Result<Self>
     where
         I: IntoIterator<Item = P>,
@@ -231,7 +231,7 @@ impl Matcher {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for none.
+    /// [`crate::Error::Config`] for none.
     pub fn scheme<I>(schemes: I) -> Result<Self>
     where
         I: IntoIterator<Item = Scheme>,
@@ -246,7 +246,7 @@ impl Matcher {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for none.
+    /// [`crate::Error::Config`] for none.
     pub fn network<I>(networks: I) -> Result<Self>
     where
         I: IntoIterator<Item = IpNet>,
@@ -407,7 +407,7 @@ impl FromStr for Matcher {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for empty text, a bad port or (`re:`) an expression that does not compile
+    /// [`crate::Error::Config`] for empty text, a bad port or (`re:`) an expression that does not compile
     /// or a build without feature `regex`.
     fn from_str(text: &str) -> Result<Self> {
         let text = text.trim();

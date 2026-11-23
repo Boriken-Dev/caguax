@@ -241,7 +241,7 @@ impl Credential {
     ///
     /// # Errors
     ///
-    /// [`Error::CredentialUnavailable`] when the identity cannot be found or loaded.
+    /// [`crate::Error::CredentialUnavailable`] when the identity cannot be found or loaded.
     pub async fn tls_config(&self, host: &str) -> Result<Arc<rustls::ClientConfig>> {
         let tls = {
             let mut built = self.built.lock().await;

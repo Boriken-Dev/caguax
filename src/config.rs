@@ -537,7 +537,7 @@ fn locate(path: Option<&str>, error: ConfigError) -> Error {
 ///
 /// # Errors
 ///
-/// [`Error::Config`] for text that is not UTF-8, a format that is not known or not built in, a
+/// [`crate::Error::Config`] for text that is not UTF-8, a format that is not known or not built in, a
 /// syntax error or a table or key that is not part of the document.
 pub fn loads(text: &[u8], options: LoadOptions) -> Result<Document> {
     let path = options.path.as_deref();
@@ -608,7 +608,7 @@ fn from_anycfg(error: &anycfg::Error, removed: usize) -> ConfigError {
 ///
 /// # Errors
 ///
-/// [`Error::Io`] when the file cannot be read, otherwise as [`loads`].
+/// [`crate::Error::Io`] when the file cannot be read, otherwise as [`loads`].
 pub fn load(path: impl AsRef<Path>, options: LoadOptions) -> Result<Document> {
     let path = path.as_ref();
     let bytes = std::fs::read(path)?;
@@ -1055,7 +1055,7 @@ fn env_pin(name: &str) -> Pin {
 ///
 /// # Errors
 ///
-/// [`Error::Config`] naming the table and key at fault.
+/// [`crate::Error::Config`] naming the table and key at fault.
 pub fn build_router(document: &Document, base_dir: Option<&Path>) -> Result<Router> {
     let builder = Builder {
         document,
@@ -1070,7 +1070,7 @@ pub fn build_router(document: &Document, base_dir: Option<&Path>) -> Result<Rout
 ///
 /// # Errors
 ///
-/// [`Error::Config`] naming the table and key at fault.
+/// [`crate::Error::Config`] naming the table and key at fault.
 pub fn build_server(document: &Document, options: BuildOptions) -> Result<ServerBuilder> {
     let parts = build_parts(document, options)?;
     Ok(Server::builder(parts.router)
@@ -1095,7 +1095,7 @@ pub struct Parts {
 ///
 /// # Errors
 ///
-/// [`Error::Config`] naming the table and key at fault.
+/// [`crate::Error::Config`] naming the table and key at fault.
 pub fn build_parts(document: &Document, options: BuildOptions) -> Result<Parts> {
     let builder = Builder {
         document,
@@ -1155,7 +1155,7 @@ pub fn router_non_defaults(router: &Router) -> Vec<String> {
 ///
 /// # Errors
 ///
-/// [`Error::Config`] for text that is neither.
+/// [`crate::Error::Config`] for text that is neither.
 pub fn connection_for_target(target: &str, listener: &str) -> Result<Connection> {
     use crate::connection::Scheme;
     if let Some((scheme, rest)) = target.split_once("://") {

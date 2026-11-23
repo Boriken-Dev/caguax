@@ -217,7 +217,7 @@ impl Rule {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for a pattern that does not parse.
+    /// [`crate::Error::Config`] for a pattern that does not parse.
     pub fn parse(pattern: &str, route: impl Into<Route>) -> Result<Self> {
         Ok(Self::new(pattern.parse::<Matcher>()?, route))
     }

@@ -30,7 +30,7 @@ impl Tunnel {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`](crate::Error::Config) for a listen address that does not parse or a
+    /// [`crate::Error::Config`](crate::Error::Config) for a listen address that does not parse or a
     /// target with no port.
     pub fn builder(listen: &str, target: &str) -> Result<TunnelBuilder> {
         let listen: ListenAddr = listen.parse()?;

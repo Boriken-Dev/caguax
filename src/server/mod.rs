@@ -292,9 +292,9 @@ impl ServerBuilder {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for settings that mean nothing or a listener beyond loopback without
-    /// `allow_remote`; [`Error::Io`] when an address is taken; the errors of loading the CA, the
-    /// key log or the capture file; [`Error::Proxy`] when the egress cannot be built.
+    /// [`crate::Error::Config`] for settings that mean nothing or a listener beyond loopback without
+    /// `allow_remote`; [`crate::Error::Io`] when an address is taken; the errors of loading the CA, the
+    /// key log or the capture file; [`crate::Error::Proxy`] when the egress cannot be built.
     pub async fn start(self) -> Result<Server> {
         let Self {
             router,
@@ -680,7 +680,7 @@ impl Server {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for a different `listen`; otherwise as [`ServerBuilder::start`].
+    /// [`crate::Error::Config`] for a different `listen`; otherwise as [`ServerBuilder::start`].
     pub async fn reload(
         &self,
         settings: ServerSettings,

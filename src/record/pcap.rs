@@ -95,7 +95,7 @@ impl PcapRecorder {
     ///
     /// # Errors
     ///
-    /// [`Error::Io`] when the file cannot be written.
+    /// [`crate::Error::Io`] when the file cannot be written.
     pub fn create(path: impl AsRef<Path>, format: PcapFormat) -> Result<Self> {
         let file = File::create(path)?;
         let shared = Shared(Arc::new(Mutex::new(BufWriter::new(file))));
@@ -136,7 +136,7 @@ impl PcapRecorder {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for zero.
+    /// [`crate::Error::Config`] for zero.
     pub fn mss(mut self, mss: usize) -> Result<Self> {
         if mss == 0 {
             return Err(config("a segment size is above zero"));
@@ -149,7 +149,7 @@ impl PcapRecorder {
     ///
     /// # Errors
     ///
-    /// [`Error::Io`] when the flush fails.
+    /// [`crate::Error::Io`] when the flush fails.
     pub fn close(self) -> Result<()> {
         let mut shared = self.shared.clone();
         shared.flush()?;

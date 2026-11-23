@@ -78,7 +78,7 @@ impl Connection {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for an empty host or port 0.
+    /// [`crate::Error::Config`] for an empty host or port 0.
     pub fn new(host: &str, port: u16) -> Result<Self> {
         Self::builder(host, port).build()
     }
@@ -196,7 +196,7 @@ impl ConnectionBuilder {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] for an empty host or port 0.
+    /// [`crate::Error::Config`] for an empty host or port 0.
     pub fn build(self) -> Result<Connection> {
         if self.connection.host.is_empty() {
             return Err(config("a connection needs a host"));

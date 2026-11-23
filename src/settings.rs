@@ -21,7 +21,7 @@ use crate::upstream::Egress;
 ///
 /// # Errors
 ///
-/// [`Error::Config`] for text that is not a duration, a negative or a non-finite number.
+/// [`crate::Error::Config`] for text that is not a duration, a negative or a non-finite number.
 pub fn parse_duration(text: &str) -> Result<Duration> {
     let text = text.trim();
     let split = text
@@ -262,7 +262,7 @@ impl ServerSettings {
     ///
     /// # Errors
     ///
-    /// [`Error::Config`] naming the setting.
+    /// [`crate::Error::Config`] naming the setting.
     pub fn validate(&self) -> Result<()> {
         let positive_duration = [
             ("connect_timeout", self.connect_timeout),

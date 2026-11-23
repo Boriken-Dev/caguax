@@ -55,7 +55,7 @@ impl Egress {
     ///
     /// # Errors
     ///
-    /// [`Error::Proxy`] for a PAC location that cannot be loaded or text that is not a proxy.
+    /// [`crate::Error::Proxy`] for a PAC location that cannot be loaded or text that is not a proxy.
     pub fn resolver(&self) -> Result<Resolver> {
         let no_variables = || Environment::from_pairs(Vec::<(String, String)>::new());
         Ok(match self {
@@ -340,7 +340,7 @@ impl ConnectOptions {
     ///
     /// # Errors
     ///
-    /// [`Error::Proxy`] when the egress cannot be built.
+    /// [`crate::Error::Proxy`] when the egress cannot be built.
     pub async fn warm_up(&self) -> Result<()> {
         if let Some(egress) = &self.egress {
             self.resolvers.get(egress).await?;
@@ -382,7 +382,7 @@ impl ConnectOptions {
 ///
 /// # Errors
 ///
-/// [`Error::Proxy`] when the egress cannot be built or the lookup fails.
+/// [`crate::Error::Proxy`] when the egress cannot be built or the lookup fails.
 pub async fn resolve_upstream(
     connection: &Connection,
     route: &CaRoute,
@@ -463,10 +463,10 @@ async fn open_proxy(proxy: &Proxy, timeout: Duration) -> Result<UpstreamStream> 
 ///
 /// # Errors
 ///
-/// - [`Error::Rejected`] for a `Reject` route (the caller should not have asked);
-/// - [`Error::Upstream`] when no upstream answer works (the message lists each attempt, never
+/// - [`crate::Error::Rejected`] for a `Reject` route (the caller should not have asked);
+/// - [`crate::Error::Upstream`] when no upstream answer works (the message lists each attempt, never
 ///   proxy credentials) or the TLS handshake fails;
-/// - [`Error::CredentialUnavailable`] when a TLS route's credential cannot be loaded.
+/// - [`crate::Error::CredentialUnavailable`] when a TLS route's credential cannot be loaded.
 pub async fn connect(
     connection: &Connection,
     route: &CaRoute,

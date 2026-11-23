@@ -110,7 +110,7 @@ impl FromStr for ListenAddr {
 ///
 /// # Errors
 ///
-/// [`Error::Config`] for an entry that is not an address.
+/// [`crate::Error::Config`] for an entry that is not an address.
 pub fn parse_list(text: &str) -> Result<Vec<ListenAddr>> {
     text.split(',').map(str::parse).collect()
 }

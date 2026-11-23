@@ -8,8 +8,7 @@ use super::Tunnel;
 use crate::error::Result;
 use crate::route::Routing;
 
-/// Builds a [`Server`]; every setter of [`super::ServerBuilder`] applies through
-/// [`builder`](Self::builder).
+/// Builds a [`Server`]; [`with`](Self::with) changes the asynchronous builder it wraps.
 #[derive(Debug)]
 #[must_use]
 pub struct ServerBuilder {
@@ -46,7 +45,7 @@ impl ServerBuilder {
     ///
     /// # Errors
     ///
-    /// As [`super::ServerBuilder::start`], and [`Error::Io`](crate::Error::Io) when the runtime
+    /// As [`super::ServerBuilder::start`], and [`crate::Error::Io`] when the runtime
     /// cannot start.
     pub fn start(self) -> Result<Server> {
         let mut runtime = tokio::runtime::Builder::new_multi_thread();
