@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: crates-io
-      url: https://crates.io/crates/netproxy
+      url: https://crates.io/crates/caguax
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
