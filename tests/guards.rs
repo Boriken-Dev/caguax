@@ -73,3 +73,24 @@ fn the_library_keeps_no_process_wide_state() {
     };
     assert_eq!(holding("src", state), Vec::<String>::new());
 }
+
+#[test]
+fn the_library_prints_and_exits_nowhere_outside_the_command_line() {
+    let output = |line: &str| {
+        [
+            "println!",
+            "eprintln!",
+            "print!(",
+            "eprint!(",
+            "dbg!(",
+            "process::exit",
+        ]
+        .iter()
+        .any(|needle| line.contains(needle))
+    };
+    let found: Vec<String> = holding("src", output)
+        .into_iter()
+        .filter(|path| !path.starts_with("src/cli/") && path != "src/main.rs")
+        .collect();
+    assert_eq!(found, Vec::<String>::new());
+}

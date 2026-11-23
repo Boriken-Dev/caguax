@@ -1,32 +1,80 @@
-        [package]
-        name = "caguax"
-        version = "0.0.0-alpha.0"
-        description = "A local proxy server that routes each request by rules, through the system's proxy, an upstream proxy or directly, and the caguax command line"
-        readme = "README.md"
-        edition = "2024"
-        rust-version = "1.89"
-        license = "MIT OR Apache-2.0"
-        repository = "https://github.com/Boriken-Dev/caguax"
-        keywords = ["proxy", "socks", "http-proxy", "pac"]
-        categories = ["network-programming", "command-line-utilities"]
-        # Git dependencies cannot be published to crates.io.
-        publish = false
-        exclude = [".*", "*.local.*", "/tools/"]
+[package]
+name = "caguax"
+version = "0.0.0-alpha.0"
+description = "A local proxy server that routes each request by rules, through the system's proxy, an upstream proxy or directly, and the caguax command line"
+readme = "README.md"
+edition = "2024"
+rust-version = "1.89"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Boriken-Dev/caguax"
+keywords = ["proxy", "socks", "http-proxy", "pac"]
+categories = ["network-programming", "command-line-utilities"]
+# Git dependencies cannot be published to crates.io.
+publish = false
+exclude = [".*", "*.local.*", "/tools/"]
 
-        [package.metadata.docs.rs]
-        all-features = true
-        rustdoc-args = ["--cfg", "docsrs"]
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
 [[bin]]
 name = "caguax"
 path = "src/main.rs"
 required-features = ["cli"]
 
-        [features]
-        default = []
-# The `caguax` command line.
-cli = []
+[features]
+# The package's purpose is the server and its command, so the command line is on; a library user
+# turns default features off.
+default = ["cli", "regex"]
+# The `caguax` command line (`cli`, the binary).
+cli = ["dep:clap", "dep:tracing-subscriber", "dep:rpassword"]
+# `Matcher::HostRegex` and `Matcher::Path` (the `re:` rule spelling and `path` rule key).
+regex = ["dep:regex"]
+# `record::PcapRecorder`: sessions written to a capture file.
+pcap = ["dep:pcap-file"]
+# YAML configuration files.
+yaml = ["dep:serde-saphyr"]
+# INI configuration files (the reader is this crate's own, so the feature adds no dependency).
+ini = []
+# PKCS#11 credentials and `caguax cert --backend pkcs11`.
+pkcs11 = ["coqui-sslcontext/pkcs11"]
+# Negotiate and NTLM upstream proxies.
+negotiate = ["coqui-proxy/negotiate"]
 
-        [dependencies]
+[dependencies]
+# The server, the upstream connections and the signals: this crate's purpose.
+tokio = { version = "1", features = ["rt-multi-thread", "net", "io-util", "time", "sync", "macros", "signal"] }
+# The HTTP/1 listener (requests, CONNECT upgrades) and the client that forwards a request.
+hyper = { version = "1", default-features = false, features = ["server", "client", "http1"] }
+hyper-util = { version = "0.1", default-features = false, features = ["tokio"] }
+http-body-util = "0.1"
+bytes = "1"
+# TLS to destinations, and to clients of an intercepted tunnel.
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
+coqui-proxy = { git = "https://github.com/Boriken-Dev/coqui-proxy", rev = "ff84404", features = ["tokio", "pac", "tls"] }
+coqui-sslcontext = { git = "https://github.com/Boriken-Dev/coqui-sslcontext", rev = "955cd9a455a288a523418daad7e846008c2bf291", features = ["system", "issue", "encrypted-keys", "pkcs12"] }
+coqui-net-acl = { git = "https://github.com/Boriken-Dev/coqui-net-acl", rev = "839435acc29b76ec0190b7099f870863313d3fcd", features = ["serde"] }
+# Configuration discovery, format selection and typed reads.
+anycfg = { git = "https://github.com/jose-pr/anycfg-rs", rev = "bf71f70" }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+toml = { version = "0.9", features = ["preserve_order"] }
+thiserror = "2"
+tracing = { version = "0.1", default-features = false, features = ["std"] }
 
-        [dev-dependencies]
+regex = { version = "1", optional = true }
+pcap-file = { version = "3", optional = true }
+serde-saphyr = { version = "2", optional = true }
+
+clap = { version = "4", features = ["derive", "env"], optional = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter"], optional = true }
+rpassword = { version = "7", optional = true }
+
+[dev-dependencies]
+proptest = "1"
+tempfile = "3"
+
+# Development against the local checkout until the pushed revision is pinned.
+[patch."https://github.com/Boriken-Dev/coqui-proxy"]
+coqui-proxy = { path = "../coqui-proxy" }
