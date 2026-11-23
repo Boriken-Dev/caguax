@@ -123,7 +123,7 @@ async fn an_upstream_squid_carries_connect_and_forwarded_requests() {
     std::fs::write(
         &configuration,
         format!(
-            "http_port {address}\nacl all src all\nhttp_access allow all\ncache deny all\naccess_log none\ncache_log {dir}/cache.log\npid_filename {dir}/squid.pid\ncoredump_dir {dir}\nvisible_hostname caguax-test\nnever_direct allow all\n",
+            "http_port {address}\nacl all src all\nhttp_access allow all\ncache deny all\naccess_log none\ncache_log {dir}/cache.log\npid_filename {dir}/squid.pid\ncoredump_dir {dir}\nvisible_hostname caguax-test\n",
             dir = directory.path().display()
         ),
     )
