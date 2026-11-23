@@ -1,0 +1,1227 @@
+pub mod caguax
+pub mod caguax::blocking
+pub struct caguax::blocking::Server
+impl caguax::server::blocking::Server
+pub fn caguax::server::blocking::Server::addresses(&self) -> &[core::net::socket_addr::SocketAddr]
+pub fn caguax::server::blocking::Server::builder(impl caguax::route::Routing + 'static) -> caguax::server::blocking::ServerBuilder
+pub fn caguax::server::blocking::Server::port(&self) -> u16
+pub fn caguax::server::blocking::Server::server(&self) -> &caguax::server::Server
+pub fn caguax::server::blocking::Server::shutdown(self)
+pub fn caguax::server::blocking::Server::tunnel_address(&self, &caguax::Tunnel) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub struct caguax::blocking::ServerBuilder
+impl caguax::server::blocking::ServerBuilder
+pub fn caguax::server::blocking::ServerBuilder::start(self) -> caguax::error::Result<caguax::server::blocking::Server>
+pub fn caguax::server::blocking::ServerBuilder::with(self, impl core::ops::function::FnOnce(caguax::server::ServerBuilder) -> caguax::server::ServerBuilder) -> Self
+pub fn caguax::server::blocking::ServerBuilder::worker_threads(self, usize) -> Self
+impl core::convert::From<caguax::server::ServerBuilder> for caguax::server::blocking::ServerBuilder
+pub fn caguax::server::blocking::ServerBuilder::from(caguax::server::ServerBuilder) -> Self
+pub mod caguax::cli
+pub enum caguax::cli::BackendChoice
+pub caguax::cli::BackendChoice::Cng
+pub caguax::cli::BackendChoice::Keychain
+pub caguax::cli::BackendChoice::Pkcs11
+pub caguax::cli::BackendChoice::System
+pub enum caguax::cli::CaCommand
+pub caguax::cli::CaCommand::Init(caguax::cli::InitArgs)
+pub caguax::cli::CaCommand::Show
+pub enum caguax::cli::CertCommand
+pub caguax::cli::CertCommand::List(caguax::cli::ListArgs)
+pub caguax::cli::CertCommand::Probe(caguax::cli::ProbeArgs)
+pub caguax::cli::CertCommand::Show(caguax::cli::ShowArgs)
+pub enum caguax::cli::Command
+pub caguax::cli::Command::Ca(caguax::cli::CaCommand)
+pub caguax::cli::Command::Cert(caguax::cli::CertCommand)
+pub caguax::cli::Command::Check(caguax::cli::CheckArgs)
+pub caguax::cli::Command::Pac(caguax::cli::PacArgs)
+pub caguax::cli::Command::Run(caguax::cli::RunArgs)
+pub enum caguax::cli::Format
+pub caguax::cli::Format::Json
+pub caguax::cli::Format::Text
+pub enum caguax::cli::LocationChoice
+pub caguax::cli::LocationChoice::CurrentUser
+pub caguax::cli::LocationChoice::LocalMachine
+pub enum caguax::cli::PinChoice
+pub caguax::cli::PinChoice::Ask
+pub caguax::cli::PinChoice::Keystore
+pub caguax::cli::PinChoice::None
+pub struct caguax::cli::CheckArgs
+pub caguax::cli::CheckArgs::listener: alloc::string::String
+pub caguax::cli::CheckArgs::output: caguax::cli::OutputArgs
+pub caguax::cli::CheckArgs::target: alloc::string::String
+pub struct caguax::cli::Cli
+pub caguax::cli::Cli::command: caguax::cli::Command
+pub caguax::cli::Cli::config: core::option::Option<std::path::PathBuf>
+pub caguax::cli::Cli::loglevel: core::option::Option<alloc::string::String>
+pub caguax::cli::Cli::quiet: u8
+pub caguax::cli::Cli::verbose: u8
+pub struct caguax::cli::InitArgs
+pub caguax::cli::InitArgs::force: bool
+pub caguax::cli::InitArgs::unconstrained: bool
+pub struct caguax::cli::ListArgs
+pub caguax::cli::ListArgs::all: bool
+pub caguax::cli::ListArgs::output: caguax::cli::OutputArgs
+pub caguax::cli::ListArgs::source: caguax::cli::SourceArgs
+pub struct caguax::cli::OutputArgs
+pub caguax::cli::OutputArgs::format: caguax::cli::Format
+pub caguax::cli::OutputArgs::json: bool
+impl caguax::cli::OutputArgs
+pub fn caguax::cli::OutputArgs::chosen(&self) -> caguax::cli::Format
+pub struct caguax::cli::PacArgs
+pub caguax::cli::PacArgs::proxy: core::option::Option<alloc::string::String>
+pub struct caguax::cli::ProbeArgs
+pub caguax::cli::ProbeArgs::ask: bool
+pub caguax::cli::ProbeArgs::cafile: core::option::Option<std::path::PathBuf>
+pub caguax::cli::ProbeArgs::insecure: bool
+pub caguax::cli::ProbeArgs::no_policy: bool
+pub caguax::cli::ProbeArgs::output: caguax::cli::OutputArgs
+pub caguax::cli::ProbeArgs::source: caguax::cli::SourceArgs
+pub caguax::cli::ProbeArgs::timeout: core::time::Duration
+pub caguax::cli::ProbeArgs::url: alloc::string::String
+pub struct caguax::cli::RunArgs
+pub struct caguax::cli::ShowArgs
+pub caguax::cli::ShowArgs::query: alloc::string::String
+pub caguax::cli::ShowArgs::source: caguax::cli::SourceArgs
+pub struct caguax::cli::SourceArgs
+pub caguax::cli::SourceArgs::backend: caguax::cli::BackendChoice
+pub caguax::cli::SourceArgs::location: caguax::cli::LocationChoice
+pub caguax::cli::SourceArgs::module: core::option::Option<std::path::PathBuf>
+pub caguax::cli::SourceArgs::pin: caguax::cli::PinChoice
+pub caguax::cli::SourceArgs::store: alloc::string::String
+pub caguax::cli::SourceArgs::token: core::option::Option<alloc::string::String>
+pub const caguax::cli::LOG_VARIABLE: &str
+pub fn caguax::cli::command() -> clap_builder::builder::command::Command
+pub fn caguax::cli::main<I, T>(I) -> std::process::ExitCode where I: core::iter::traits::collect::IntoIterator<Item = T>, T: core::convert::Into<std::ffi::os_str::OsString> + core::clone::Clone
+pub mod caguax::config
+#[non_exhaustive] pub enum caguax::config::Format
+pub caguax::config::Format::Ini
+pub caguax::config::Format::Json
+pub caguax::config::Format::Toml
+pub caguax::config::Format::Yaml
+impl caguax::config::Format
+pub fn caguax::config::Format::as_str(self) -> &'static str
+impl core::str::traits::FromStr for caguax::config::Format
+pub type caguax::config::Format::Err = caguax::error::Error
+pub fn caguax::config::Format::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub struct caguax::config::BuildOptions
+pub caguax::config::BuildOptions::base_dir: core::option::Option<std::path::PathBuf>
+pub caguax::config::BuildOptions::label: alloc::string::String
+impl caguax::config::BuildOptions
+pub fn caguax::config::BuildOptions::base_dir(self, impl core::convert::Into<std::path::PathBuf>) -> Self
+pub fn caguax::config::BuildOptions::label(self, impl core::convert::Into<alloc::string::String>) -> Self
+impl core::default::Default for caguax::config::BuildOptions
+pub fn caguax::config::BuildOptions::default() -> Self
+#[non_exhaustive] pub struct caguax::config::CredentialSpec
+pub caguax::config::CredentialSpec::backend: core::option::Option<alloc::string::String>
+pub caguax::config::CredentialSpec::cadata: core::option::Option<alloc::string::String>
+pub caguax::config::CredentialSpec::cafile: core::option::Option<std::path::PathBuf>
+pub caguax::config::CredentialSpec::capath: core::option::Option<std::path::PathBuf>
+pub caguax::config::CredentialSpec::certificate: core::option::Option<std::path::PathBuf>
+pub caguax::config::CredentialSpec::key: core::option::Option<std::path::PathBuf>
+pub caguax::config::CredentialSpec::minimum_version: core::option::Option<alloc::string::String>
+pub caguax::config::CredentialSpec::options: serde_json::map::Map<alloc::string::String, serde_json::value::Value>
+pub caguax::config::CredentialSpec::password_env: core::option::Option<alloc::string::String>
+pub caguax::config::CredentialSpec::password_file: core::option::Option<std::path::PathBuf>
+pub caguax::config::CredentialSpec::pin: core::option::Option<alloc::string::String>
+pub caguax::config::CredentialSpec::pin_env: core::option::Option<alloc::string::String>
+pub caguax::config::CredentialSpec::query: serde_json::map::Map<alloc::string::String, serde_json::value::Value>
+pub caguax::config::CredentialSpec::verify: core::option::Option<bool>
+#[non_exhaustive] pub struct caguax::config::Document
+pub caguax::config::Document::credentials: alloc::collections::btree::map::BTreeMap<alloc::string::String, caguax::config::CredentialSpec>
+pub caguax::config::Document::default: caguax::config::RouteSpec
+pub caguax::config::Document::rules: alloc::vec::Vec<caguax::config::RuleSpec>
+pub caguax::config::Document::server: caguax::settings::ServerSettings
+pub caguax::config::Document::tunnels: alloc::vec::Vec<caguax::config::TunnelSpec>
+pub struct caguax::config::LoadOptions
+impl caguax::config::LoadOptions
+pub fn caguax::config::LoadOptions::format(self, caguax::config::Format) -> Self
+pub fn caguax::config::LoadOptions::path(self, impl core::convert::Into<alloc::string::String>) -> Self
+#[non_exhaustive] pub struct caguax::config::Parts
+pub caguax::config::Parts::router: caguax::route::Router
+pub caguax::config::Parts::settings: caguax::settings::ServerSettings
+pub caguax::config::Parts::tunnels: alloc::vec::Vec<caguax::Tunnel>
+#[non_exhaustive] pub struct caguax::config::RouteSpec
+pub caguax::config::RouteSpec::action: core::option::Option<alloc::string::String>
+pub caguax::config::RouteSpec::credential: core::option::Option<alloc::string::String>
+pub caguax::config::RouteSpec::name: core::option::Option<alloc::string::String>
+pub caguax::config::RouteSpec::upstream: core::option::Option<alloc::string::String>
+#[non_exhaustive] pub struct caguax::config::RuleSpec
+#[non_exhaustive] pub struct caguax::config::TunnelSpec
+pub const caguax::config::CONFIG_VARIABLE: &str
+pub fn caguax::config::build_parts(&caguax::config::Document, caguax::config::BuildOptions) -> caguax::error::Result<caguax::config::Parts>
+pub fn caguax::config::build_router(&caguax::config::Document, core::option::Option<&std::path::Path>) -> caguax::error::Result<caguax::route::Router>
+pub fn caguax::config::build_server(&caguax::config::Document, caguax::config::BuildOptions) -> caguax::error::Result<caguax::server::ServerBuilder>
+pub fn caguax::config::connection_for_target(&str, &str) -> caguax::error::Result<caguax::connection::Connection>
+pub fn caguax::config::default_path() -> std::path::PathBuf
+pub fn caguax::config::load(impl core::convert::AsRef<std::path::Path>, caguax::config::LoadOptions) -> caguax::error::Result<caguax::config::Document>
+pub fn caguax::config::load_server(impl core::convert::AsRef<std::path::Path>) -> caguax::error::Result<caguax::server::ServerBuilder>
+pub fn caguax::config::loads(&[u8], caguax::config::LoadOptions) -> caguax::error::Result<caguax::config::Document>
+pub fn caguax::config::router_non_defaults(&caguax::route::Router) -> alloc::vec::Vec<alloc::string::String>
+pub mod caguax::connection
+#[non_exhaustive] pub enum caguax::connection::Scheme
+pub caguax::connection::Scheme::Http
+pub caguax::connection::Scheme::Https
+pub caguax::connection::Scheme::Tcp
+impl caguax::connection::Scheme
+pub fn caguax::connection::Scheme::as_str(self) -> &'static str
+impl core::fmt::Display for caguax::connection::Scheme
+pub fn caguax::connection::Scheme::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::str::traits::FromStr for caguax::connection::Scheme
+pub type caguax::connection::Scheme::Err = caguax::error::Error
+pub fn caguax::connection::Scheme::from_str(&str) -> caguax::error::Result<Self>
+pub struct caguax::connection::Connection
+impl caguax::connection::Connection
+pub fn caguax::connection::Connection::authority(&self) -> alloc::string::String
+pub fn caguax::connection::Connection::builder(&str, u16) -> caguax::connection::ConnectionBuilder
+pub fn caguax::connection::Connection::client(&self) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub fn caguax::connection::Connection::host(&self) -> &str
+pub fn caguax::connection::Connection::listener(&self) -> &str
+pub fn caguax::connection::Connection::new(&str, u16) -> caguax::error::Result<Self>
+pub fn caguax::connection::Connection::path(&self) -> core::option::Option<&str>
+pub fn caguax::connection::Connection::port(&self) -> u16
+pub fn caguax::connection::Connection::scheme(&self) -> caguax::connection::Scheme
+pub fn caguax::connection::Connection::url(&self) -> alloc::string::String
+pub struct caguax::connection::ConnectionBuilder
+impl caguax::connection::ConnectionBuilder
+pub fn caguax::connection::ConnectionBuilder::build(self) -> caguax::error::Result<caguax::connection::Connection>
+pub fn caguax::connection::ConnectionBuilder::client(self, core::net::socket_addr::SocketAddr) -> Self
+pub fn caguax::connection::ConnectionBuilder::listener(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::connection::ConnectionBuilder::path(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::connection::ConnectionBuilder::scheme(self, caguax::connection::Scheme) -> Self
+pub const caguax::connection::LISTENER: &str
+pub mod caguax::credential
+#[non_exhaustive] pub enum caguax::credential::Backend
+pub caguax::credential::Backend::Cng
+pub caguax::credential::Backend::Keychain
+pub caguax::credential::Backend::Pkcs11
+pub caguax::credential::Backend::System
+impl caguax::credential::Backend
+pub fn caguax::credential::Backend::as_str(self) -> &'static str
+impl core::fmt::Display for caguax::credential::Backend
+pub fn caguax::credential::Backend::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::str::traits::FromStr for caguax::credential::Backend
+pub type caguax::credential::Backend::Err = caguax::error::Error
+pub fn caguax::credential::Backend::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::credential::StoreLocation
+pub caguax::credential::StoreLocation::Machine
+pub caguax::credential::StoreLocation::User
+impl core::str::traits::FromStr for caguax::credential::StoreLocation
+pub type caguax::credential::StoreLocation::Err = caguax::error::Error
+pub fn caguax::credential::StoreLocation::from_str(&str) -> caguax::error::Result<Self>
+pub struct caguax::credential::Credential
+impl caguax::credential::Credential
+pub fn caguax::credential::Credential::backend(&self) -> core::option::Option<caguax::credential::Backend>
+pub fn caguax::credential::Credential::from_pem(impl core::convert::Into<alloc::vec::Vec<u8>>, core::option::Option<alloc::vec::Vec<u8>>, coqui_sslcontext::password::KeyPassword) -> caguax::credential::CredentialBuilder
+pub fn caguax::credential::Credential::identity(coqui_sslcontext::identity::Identity) -> caguax::credential::CredentialBuilder
+pub fn caguax::credential::Credential::identity_with(impl core::ops::function::Fn() -> caguax::error::Result<coqui_sslcontext::identity::Identity> + core::marker::Send + core::marker::Sync + 'static) -> caguax::credential::CredentialBuilder
+pub async fn caguax::credential::Credential::invalidate(&self)
+pub fn caguax::credential::Credential::keystore(caguax::credential::Backend) -> caguax::credential::CredentialBuilder
+pub fn caguax::credential::Credential::name(&self) -> &str
+pub fn caguax::credential::Credential::options(&self) -> core::option::Option<&caguax::credential::KeystoreOptions>
+pub fn caguax::credential::Credential::query(&self) -> core::option::Option<&coqui_sslcontext::select::IdentityQuery>
+pub async fn caguax::credential::Credential::tls_config(&self, &str) -> caguax::error::Result<alloc::sync::Arc<rustls::client::client_conn::ClientConfig>>
+pub fn caguax::credential::Credential::verification_disabled(&self) -> bool
+impl caguax::credential::Credential
+pub fn caguax::credential::Credential::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
+impl core::convert::From<caguax::credential::Credential> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(caguax::credential::Credential) -> Self
+impl core::fmt::Debug for caguax::credential::Credential
+pub fn caguax::credential::Credential::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::credential::CredentialBuilder
+impl caguax::credential::CredentialBuilder
+pub fn caguax::credential::CredentialBuilder::build(self) -> caguax::credential::Credential
+pub fn caguax::credential::CredentialBuilder::cadata(self, impl core::convert::Into<alloc::vec::Vec<u8>>) -> Self
+pub fn caguax::credential::CredentialBuilder::cafile(self, impl core::convert::Into<std::path::PathBuf>) -> Self
+pub fn caguax::credential::CredentialBuilder::capath(self, impl core::convert::Into<std::path::PathBuf>) -> Self
+pub fn caguax::credential::CredentialBuilder::keystore_options(self, caguax::credential::KeystoreOptions) -> Self
+pub fn caguax::credential::CredentialBuilder::minimum_version(self, coqui_sslcontext::settings::TlsVersion) -> Self
+pub fn caguax::credential::CredentialBuilder::name(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::credential::CredentialBuilder::query(self, coqui_sslcontext::select::IdentityQuery) -> Self
+pub fn caguax::credential::CredentialBuilder::verify(self, bool) -> Self
+impl core::convert::From<caguax::credential::CredentialBuilder> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(caguax::credential::CredentialBuilder) -> Self
+#[non_exhaustive] pub struct caguax::credential::KeystoreOptions
+pub caguax::credential::KeystoreOptions::keychain: core::option::Option<std::path::PathBuf>
+pub caguax::credential::KeystoreOptions::location: caguax::credential::StoreLocation
+pub caguax::credential::KeystoreOptions::module: core::option::Option<std::path::PathBuf>
+pub caguax::credential::KeystoreOptions::pin: coqui_sslcontext::pin::Pin
+pub caguax::credential::KeystoreOptions::slot: core::option::Option<u64>
+pub caguax::credential::KeystoreOptions::store: core::option::Option<alloc::string::String>
+pub caguax::credential::KeystoreOptions::token: core::option::Option<alloc::string::String>
+pub mod caguax::error
+#[non_exhaustive] pub enum caguax::error::Error
+pub caguax::error::Error::Config(caguax::error::ConfigError)
+pub caguax::error::Error::CredentialUnavailable(caguax::error::CredentialUnavailableError)
+pub caguax::error::Error::Io(core::io::error::Error)
+pub caguax::error::Error::Proxy(coqui_proxy::error::Error)
+pub caguax::error::Error::Rejected(caguax::error::RejectedError)
+pub caguax::error::Error::Timeout(&'static str)
+pub caguax::error::Error::Tls(coqui_sslcontext::error::Error)
+pub caguax::error::Error::Upstream(caguax::error::UpstreamError)
+pub struct caguax::error::ConfigError
+impl caguax::error::ConfigError
+pub fn caguax::error::ConfigError::at_path(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::error::ConfigError::at_position(self, core::option::Option<usize>, core::option::Option<usize>) -> Self
+pub fn caguax::error::ConfigError::column(&self) -> core::option::Option<usize>
+pub fn caguax::error::ConfigError::line(&self) -> core::option::Option<usize>
+pub fn caguax::error::ConfigError::message(&self) -> &str
+pub fn caguax::error::ConfigError::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::error::ConfigError::path(&self) -> core::option::Option<&str>
+impl core::error::Error for caguax::error::ConfigError
+impl core::fmt::Display for caguax::error::ConfigError
+pub fn caguax::error::ConfigError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::error::CredentialUnavailableError
+impl caguax::error::CredentialUnavailableError
+pub fn caguax::error::CredentialUnavailableError::credential(&self) -> &str
+impl core::error::Error for caguax::error::CredentialUnavailableError
+impl core::fmt::Display for caguax::error::CredentialUnavailableError
+pub fn caguax::error::CredentialUnavailableError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::error::RejectedError
+impl caguax::error::RejectedError
+pub fn caguax::error::RejectedError::new(impl core::convert::Into<alloc::string::String>) -> Self
+impl core::error::Error for caguax::error::RejectedError
+impl core::fmt::Display for caguax::error::RejectedError
+pub fn caguax::error::RejectedError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::error::UpstreamError
+impl caguax::error::UpstreamError
+pub fn caguax::error::UpstreamError::attempts(&self) -> &[alloc::string::String]
+pub fn caguax::error::UpstreamError::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::error::UpstreamError::unreachable(&str, alloc::vec::Vec<alloc::string::String>) -> Self
+impl core::error::Error for caguax::error::UpstreamError
+impl core::fmt::Display for caguax::error::UpstreamError
+pub fn caguax::error::UpstreamError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub type caguax::error::Result<T, E> = core::result::Result<T, E>
+pub mod caguax::intercept
+#[non_exhaustive] pub struct caguax::intercept::CaOptions
+pub caguax::intercept::CaOptions::common_name: alloc::string::String
+pub caguax::intercept::CaOptions::constrain: bool
+pub caguax::intercept::CaOptions::validity: core::time::Duration
+impl core::default::Default for caguax::intercept::CaOptions
+pub fn caguax::intercept::CaOptions::default() -> Self
+pub struct caguax::intercept::Interceptor
+impl caguax::intercept::Interceptor
+pub async fn caguax::intercept::Interceptor::accept<IO>(&alloc::sync::Arc<Self>, &str, IO, core::time::Duration) -> caguax::error::Result<tokio_rustls::server::TlsStream<IO>> where IO: tokio::io::async_read::AsyncRead + tokio::io::async_write::AsyncWrite + core::marker::Unpin
+pub fn caguax::intercept::Interceptor::ca(&self) -> &coqui_sslcontext::issue::CertificateAuthority
+pub fn caguax::intercept::Interceptor::keylog(&self) -> core::option::Option<&alloc::sync::Arc<dyn rustls::key_log::KeyLog>>
+pub fn caguax::intercept::Interceptor::new(coqui_sslcontext::issue::CertificateAuthority, caguax::settings::InterceptSettings) -> caguax::error::Result<Self>
+pub fn caguax::intercept::Interceptor::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn caguax::intercept::Interceptor::server_config(&self, &str) -> caguax::error::Result<alloc::sync::Arc<rustls::server::server_conn::ServerConfig>>
+pub fn caguax::intercept::Interceptor::settings(&self) -> &caguax::settings::InterceptSettings
+pub fn caguax::intercept::Interceptor::with_keylog(self, alloc::sync::Arc<dyn rustls::key_log::KeyLog>) -> Self
+impl core::fmt::Debug for caguax::intercept::Interceptor
+pub fn caguax::intercept::Interceptor::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub const caguax::intercept::DEFAULT_CA_NAME: &str
+pub fn caguax::intercept::create_ca(&caguax::route::Router, caguax::intercept::CaOptions) -> caguax::error::Result<coqui_sslcontext::issue::CertificateAuthority>
+pub fn caguax::intercept::is_name_constrained(&coqui_sslcontext::issue::CertificateAuthority) -> bool
+pub fn caguax::intercept::load_ca(&caguax::settings::CaSettings) -> caguax::error::Result<coqui_sslcontext::issue::CertificateAuthority>
+pub fn caguax::intercept::permitted_names(&caguax::route::Router) -> core::option::Option<alloc::vec::Vec<alloc::string::String>>
+pub mod caguax::keylog
+pub struct caguax::keylog::FileKeyLog
+impl caguax::keylog::FileKeyLog
+pub fn caguax::keylog::FileKeyLog::open(impl core::convert::AsRef<std::path::Path>) -> core::io::error::Result<alloc::sync::Arc<Self>>
+impl core::fmt::Debug for caguax::keylog::FileKeyLog
+pub fn caguax::keylog::FileKeyLog::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl rustls::key_log::KeyLog for caguax::keylog::FileKeyLog
+pub fn caguax::keylog::FileKeyLog::log(&self, &str, &[u8], &[u8])
+pub mod caguax::listen
+pub struct caguax::listen::ListenAddr
+impl caguax::listen::ListenAddr
+pub fn caguax::listen::ListenAddr::address(&self) -> core::net::ip_addr::IpAddr
+pub fn caguax::listen::ListenAddr::is_local(&self) -> bool
+pub fn caguax::listen::ListenAddr::loopback() -> Self
+pub fn caguax::listen::ListenAddr::new(core::net::ip_addr::IpAddr, u16) -> Self
+pub fn caguax::listen::ListenAddr::port(&self) -> u16
+pub fn caguax::listen::ListenAddr::socket_addr(&self) -> core::net::socket_addr::SocketAddr
+impl core::convert::From<core::net::socket_addr::SocketAddr> for caguax::listen::ListenAddr
+pub fn caguax::listen::ListenAddr::from(core::net::socket_addr::SocketAddr) -> Self
+impl core::fmt::Display for caguax::listen::ListenAddr
+pub fn caguax::listen::ListenAddr::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::str::traits::FromStr for caguax::listen::ListenAddr
+pub type caguax::listen::ListenAddr::Err = caguax::error::Error
+pub fn caguax::listen::ListenAddr::from_str(&str) -> caguax::error::Result<Self>
+pub fn caguax::listen::parse_list(&str) -> caguax::error::Result<alloc::vec::Vec<caguax::listen::ListenAddr>>
+pub mod caguax::pac
+pub fn caguax::pac::generate_pac(&caguax::route::Router, &str, core::option::Option<&caguax::upstream::Egress>) -> alloc::string::String
+pub mod caguax::record
+#[non_exhaustive] pub enum caguax::record::PcapFormat
+pub caguax::record::PcapFormat::Pcap
+pub caguax::record::PcapFormat::Pcapng
+pub enum caguax::record::Sender
+pub caguax::record::Sender::Client
+pub caguax::record::Sender::Server
+impl caguax::record::Sender
+pub fn caguax::record::Sender::as_str(self) -> &'static str
+pub struct caguax::record::LogRecorder
+impl caguax::record::LogRecorder
+pub fn caguax::record::LogRecorder::level(&self) -> tracing_core::metadata::Level
+pub fn caguax::record::LogRecorder::new() -> Self
+pub fn caguax::record::LogRecorder::target(&self) -> &'static str
+pub fn caguax::record::LogRecorder::with_level(self, tracing_core::metadata::Level) -> Self
+pub fn caguax::record::LogRecorder::with_target(self, &'static str) -> Self
+impl caguax::record::Recorder for caguax::record::LogRecorder
+pub fn caguax::record::LogRecorder::closed(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::LogRecorder::data(&self, &caguax::record::Session, caguax::record::Sender, &[u8]) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::LogRecorder::ended(&self, &caguax::record::Session, caguax::record::Sender) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::LogRecorder::opened(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+impl core::default::Default for caguax::record::LogRecorder
+pub fn caguax::record::LogRecorder::default() -> Self
+pub struct caguax::record::PcapRecorder
+impl caguax::record::PcapRecorder
+pub fn caguax::record::PcapRecorder::close(self) -> caguax::error::Result<()>
+pub fn caguax::record::PcapRecorder::create(impl core::convert::AsRef<std::path::Path>, caguax::record::PcapFormat) -> caguax::error::Result<Self>
+pub fn caguax::record::PcapRecorder::mss(self, usize) -> caguax::error::Result<Self>
+impl caguax::record::Recorder for caguax::record::PcapRecorder
+pub fn caguax::record::PcapRecorder::closed(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::PcapRecorder::data(&self, &caguax::record::Session, caguax::record::Sender, &[u8]) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::PcapRecorder::ended(&self, &caguax::record::Session, caguax::record::Sender) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::PcapRecorder::opened(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+impl core::fmt::Debug for caguax::record::PcapRecorder
+pub fn caguax::record::PcapRecorder::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::record::RecordError(_)
+impl caguax::record::RecordError
+pub fn caguax::record::RecordError::new(impl core::convert::Into<alloc::string::String>) -> Self
+impl core::error::Error for caguax::record::RecordError
+impl core::fmt::Display for caguax::record::RecordError
+pub fn caguax::record::RecordError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::record::RecordedStream<S>
+impl<S> caguax::record::RecordedStream<S>
+pub fn caguax::record::RecordedStream<S>::new(S, core::option::Option<alloc::sync::Arc<caguax::record::Recording>>) -> Self
+impl<S: tokio::io::async_read::AsyncRead + core::marker::Unpin> tokio::io::async_read::AsyncRead for caguax::record::RecordedStream<S>
+pub fn caguax::record::RecordedStream<S>::poll_read(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>, &mut tokio::io::read_buf::ReadBuf<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+impl<S: tokio::io::async_write::AsyncWrite + core::marker::Unpin> tokio::io::async_write::AsyncWrite for caguax::record::RecordedStream<S>
+pub fn caguax::record::RecordedStream<S>::poll_flush(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+pub fn caguax::record::RecordedStream<S>::poll_shutdown(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+pub fn caguax::record::RecordedStream<S>::poll_write(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>, &[u8]) -> core::task::poll::Poll<core::io::error::Result<usize>>
+impl<S> core::fmt::Debug for caguax::record::RecordedStream<S>
+pub fn caguax::record::RecordedStream<S>::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl<S> core::ops::drop::Drop for caguax::record::RecordedStream<S>
+pub fn caguax::record::RecordedStream<S>::drop(&mut self)
+pub struct caguax::record::Recording
+impl caguax::record::Recording
+pub fn caguax::record::Recording::closed(&self)
+pub fn caguax::record::Recording::data(&self, caguax::record::Sender, &[u8])
+pub fn caguax::record::Recording::ended(&self, caguax::record::Sender)
+pub fn caguax::record::Recording::session(&self) -> &caguax::record::Session
+pub fn caguax::record::Recording::start(&[alloc::sync::Arc<dyn caguax::record::Recorder>], caguax::record::Session) -> core::option::Option<alloc::sync::Arc<Self>>
+impl core::fmt::Debug for caguax::record::Recording
+pub fn caguax::record::Recording::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::record::Session
+impl caguax::record::Session
+pub fn caguax::record::Session::client(&self) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub fn caguax::record::Session::connection(&self) -> &caguax::connection::Connection
+pub fn caguax::record::Session::id(&self) -> u64
+pub fn caguax::record::Session::new(u64, caguax::connection::Connection, caguax::route::Route, core::option::Option<core::net::socket_addr::SocketAddr>, core::option::Option<core::net::socket_addr::SocketAddr>) -> Self
+pub fn caguax::record::Session::route(&self) -> &caguax::route::Route
+pub fn caguax::record::Session::server(&self) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub fn caguax::record::Session::started(&self) -> std::time::SystemTime
+pub trait caguax::record::Recorder: core::marker::Send + core::marker::Sync
+pub fn caguax::record::Recorder::closed(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::Recorder::data(&self, &caguax::record::Session, caguax::record::Sender, &[u8]) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::Recorder::ended(&self, &caguax::record::Session, caguax::record::Sender) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::Recorder::opened(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+impl caguax::record::Recorder for caguax::record::LogRecorder
+pub fn caguax::record::LogRecorder::closed(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::LogRecorder::data(&self, &caguax::record::Session, caguax::record::Sender, &[u8]) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::LogRecorder::ended(&self, &caguax::record::Session, caguax::record::Sender) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::LogRecorder::opened(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+impl caguax::record::Recorder for caguax::record::PcapRecorder
+pub fn caguax::record::PcapRecorder::closed(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::PcapRecorder::data(&self, &caguax::record::Session, caguax::record::Sender, &[u8]) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::PcapRecorder::ended(&self, &caguax::record::Session, caguax::record::Sender) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::PcapRecorder::opened(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+pub mod caguax::route
+#[non_exhaustive] pub enum caguax::route::Action
+pub caguax::route::Action::Direct
+pub caguax::route::Action::Reject
+pub caguax::route::Action::Tls
+impl caguax::route::Action
+pub fn caguax::route::Action::as_str(self) -> &'static str
+impl core::fmt::Display for caguax::route::Action
+pub fn caguax::route::Action::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::str::traits::FromStr for caguax::route::Action
+pub type caguax::route::Action::Err = caguax::error::Error
+pub fn caguax::route::Action::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::route::TlsSource
+pub caguax::route::TlsSource::Config(alloc::sync::Arc<rustls::client::client_conn::ClientConfig>)
+pub caguax::route::TlsSource::Credential(alloc::sync::Arc<caguax::credential::Credential>)
+impl core::convert::From<alloc::sync::Arc<caguax::credential::Credential>> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(alloc::sync::Arc<caguax::credential::Credential>) -> Self
+impl core::convert::From<alloc::sync::Arc<rustls::client::client_conn::ClientConfig>> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(alloc::sync::Arc<rustls::client::client_conn::ClientConfig>) -> Self
+impl core::convert::From<caguax::credential::Credential> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(caguax::credential::Credential) -> Self
+impl core::convert::From<caguax::credential::CredentialBuilder> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(caguax::credential::CredentialBuilder) -> Self
+pub struct caguax::route::Explanation<'a>
+pub caguax::route::Explanation::route: &'a caguax::route::Route
+pub caguax::route::Explanation::rule: core::option::Option<&'a caguax::route::Rule>
+pub struct caguax::route::Route
+impl caguax::route::Route
+pub fn caguax::route::Route::action(&self) -> caguax::route::Action
+pub fn caguax::route::Route::direct() -> caguax::route::RouteBuilder
+pub fn caguax::route::Route::name(&self) -> &str
+pub fn caguax::route::Route::reject() -> caguax::route::RouteBuilder
+pub fn caguax::route::Route::tls(&self) -> core::option::Option<&caguax::route::TlsSource>
+pub fn caguax::route::Route::upstream(&self) -> core::option::Option<&caguax::route::UpstreamSpec>
+pub fn caguax::route::Route::with_tls(impl core::convert::Into<caguax::route::TlsSource>) -> caguax::route::RouteBuilder
+impl core::convert::From<caguax::route::RouteBuilder> for caguax::route::Route
+pub fn caguax::route::Route::from(caguax::route::RouteBuilder) -> Self
+impl core::default::Default for caguax::route::Route
+pub fn caguax::route::Route::default() -> Self
+pub struct caguax::route::RouteBuilder
+impl caguax::route::RouteBuilder
+pub fn caguax::route::RouteBuilder::build(self) -> caguax::route::Route
+pub fn caguax::route::RouteBuilder::name(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::route::RouteBuilder::upstream(self, impl core::convert::Into<caguax::route::UpstreamSpec>) -> Self
+impl core::convert::From<caguax::route::RouteBuilder> for caguax::route::Route
+pub fn caguax::route::Route::from(caguax::route::RouteBuilder) -> Self
+pub struct caguax::route::Router
+impl caguax::route::Router
+pub fn caguax::route::Router::add(&mut self, caguax::route::Rule) -> &caguax::route::Rule
+pub fn caguax::route::Router::add_match(&mut self, impl core::convert::Into<caguax::rules::Matcher>, impl core::convert::Into<caguax::route::Route>) -> &caguax::route::Rule
+pub fn caguax::route::Router::builder() -> caguax::route::RouterBuilder
+pub fn caguax::route::Router::default_route(&self) -> &caguax::route::Route
+pub fn caguax::route::Router::explain(&self, &caguax::connection::Connection) -> caguax::route::Explanation<'_>
+pub fn caguax::route::Router::new() -> Self
+pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> &caguax::route::Route
+pub fn caguax::route::Router::rules(&self) -> &[caguax::route::Rule]
+impl caguax::route::Router
+pub fn caguax::route::Router::pac_script(&self, &str, core::option::Option<&caguax::upstream::Egress>) -> alloc::string::String
+impl caguax::route::Routing for caguax::route::Router
+pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> caguax::route::Route
+pub fn caguax::route::Router::router(&self) -> core::option::Option<&caguax::route::Router>
+pub struct caguax::route::RouterBuilder
+impl caguax::route::RouterBuilder
+pub fn caguax::route::RouterBuilder::build(self) -> caguax::route::Router
+pub fn caguax::route::RouterBuilder::default_route(self, impl core::convert::Into<caguax::route::Route>) -> Self
+pub fn caguax::route::RouterBuilder::rule(self, caguax::route::Rule) -> Self
+pub fn caguax::route::RouterBuilder::rules(self, impl core::iter::traits::collect::IntoIterator<Item = caguax::route::Rule>) -> Self
+pub struct caguax::route::Rule
+impl caguax::route::Rule
+pub fn caguax::route::Rule::matcher(&self) -> &caguax::rules::Matcher
+pub fn caguax::route::Rule::name(&self) -> &str
+pub fn caguax::route::Rule::named(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::route::Rule::new(impl core::convert::Into<caguax::rules::Matcher>, impl core::convert::Into<caguax::route::Route>) -> Self
+pub fn caguax::route::Rule::parse(&str, impl core::convert::Into<caguax::route::Route>) -> caguax::error::Result<Self>
+pub fn caguax::route::Rule::route(&self) -> &caguax::route::Route
+pub trait caguax::route::Routing: core::marker::Send + core::marker::Sync
+pub fn caguax::route::Routing::route(&self, &caguax::connection::Connection) -> caguax::route::Route
+pub fn caguax::route::Routing::router(&self) -> core::option::Option<&caguax::route::Router>
+impl caguax::route::Routing for caguax::route::Router
+pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> caguax::route::Route
+pub fn caguax::route::Router::router(&self) -> core::option::Option<&caguax::route::Router>
+pub type caguax::route::UpstreamSpec = caguax::upstream::Egress
+pub mod caguax::rules
+#[non_exhaustive] pub enum caguax::rules::Matcher
+pub caguax::rules::Matcher::All
+pub caguax::rules::Matcher::AllOf(alloc::vec::Vec<caguax::rules::Matcher>)
+pub caguax::rules::Matcher::AnyOf(alloc::vec::Vec<caguax::rules::Matcher>)
+pub caguax::rules::Matcher::Custom(caguax::rules::CustomMatcher)
+pub caguax::rules::Matcher::Host(alloc::vec::Vec<alloc::string::String>)
+pub caguax::rules::Matcher::HostRegex(caguax::rules::RegexMatcher)
+pub caguax::rules::Matcher::Listener(alloc::vec::Vec<alloc::string::String>)
+pub caguax::rules::Matcher::Network(alloc::vec::Vec<coqui_net_acl::IpNet>)
+pub caguax::rules::Matcher::Not(alloc::boxed::Box<caguax::rules::Matcher>)
+pub caguax::rules::Matcher::Path(caguax::rules::RegexMatcher)
+pub caguax::rules::Matcher::Port(alloc::vec::Vec<caguax::rules::PortSpec>)
+pub caguax::rules::Matcher::Scheme(alloc::vec::Vec<caguax::connection::Scheme>)
+impl caguax::rules::Matcher
+pub fn caguax::rules::Matcher::custom(impl core::ops::function::Fn(&caguax::connection::Connection) -> bool + core::marker::Send + core::marker::Sync + 'static) -> Self
+pub fn caguax::rules::Matcher::host<I, S>(I) -> caguax::error::Result<Self> where I: core::iter::traits::collect::IntoIterator<Item = S>, S: core::convert::Into<alloc::string::String>
+pub fn caguax::rules::Matcher::host_regex(&str, bool) -> caguax::error::Result<Self>
+pub fn caguax::rules::Matcher::listener<I, S>(I) -> Self where I: core::iter::traits::collect::IntoIterator<Item = S>, S: core::convert::Into<alloc::string::String>
+pub fn caguax::rules::Matcher::matches(&self, &caguax::connection::Connection) -> bool
+pub fn caguax::rules::Matcher::network<I>(I) -> caguax::error::Result<Self> where I: core::iter::traits::collect::IntoIterator<Item = coqui_net_acl::IpNet>
+pub fn caguax::rules::Matcher::path(&str) -> caguax::error::Result<Self>
+pub fn caguax::rules::Matcher::port<I, P>(I) -> caguax::error::Result<Self> where I: core::iter::traits::collect::IntoIterator<Item = P>, P: core::convert::Into<caguax::rules::PortSpec>
+pub fn caguax::rules::Matcher::scheme<I>(I) -> caguax::error::Result<Self> where I: core::iter::traits::collect::IntoIterator<Item = caguax::connection::Scheme>
+impl core::ops::bit::BitAnd for caguax::rules::Matcher
+pub type caguax::rules::Matcher::Output = caguax::rules::Matcher
+pub fn caguax::rules::Matcher::bitand(self, caguax::rules::Matcher) -> caguax::rules::Matcher
+impl core::ops::bit::BitOr for caguax::rules::Matcher
+pub type caguax::rules::Matcher::Output = caguax::rules::Matcher
+pub fn caguax::rules::Matcher::bitor(self, caguax::rules::Matcher) -> caguax::rules::Matcher
+impl core::ops::bit::Not for caguax::rules::Matcher
+pub type caguax::rules::Matcher::Output = caguax::rules::Matcher
+pub fn caguax::rules::Matcher::not(self) -> caguax::rules::Matcher
+impl core::str::traits::FromStr for caguax::rules::Matcher
+pub type caguax::rules::Matcher::Err = caguax::error::Error
+pub fn caguax::rules::Matcher::from_str(&str) -> caguax::error::Result<Self>
+pub enum caguax::rules::PortSpec
+pub caguax::rules::PortSpec::Range(core::ops::range::RangeInclusive<u16>)
+pub caguax::rules::PortSpec::Single(u16)
+impl caguax::rules::PortSpec
+pub fn caguax::rules::PortSpec::contains(&self, u16) -> bool
+impl core::convert::From<core::ops::range::RangeInclusive<u16>> for caguax::rules::PortSpec
+pub fn caguax::rules::PortSpec::from(core::ops::range::RangeInclusive<u16>) -> Self
+impl core::convert::From<u16> for caguax::rules::PortSpec
+pub fn caguax::rules::PortSpec::from(u16) -> Self
+pub struct caguax::rules::CustomMatcher(_)
+impl core::cmp::PartialEq for caguax::rules::CustomMatcher
+pub fn caguax::rules::CustomMatcher::eq(&self, &Self) -> bool
+impl core::fmt::Debug for caguax::rules::CustomMatcher
+pub fn caguax::rules::CustomMatcher::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::rules::RegexMatcher
+impl caguax::rules::RegexMatcher
+pub fn caguax::rules::RegexMatcher::case_insensitive(&self) -> bool
+pub fn caguax::rules::RegexMatcher::pattern(&self) -> &str
+impl core::cmp::PartialEq for caguax::rules::RegexMatcher
+pub fn caguax::rules::RegexMatcher::eq(&self, &Self) -> bool
+impl core::fmt::Debug for caguax::rules::RegexMatcher
+pub fn caguax::rules::RegexMatcher::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub mod caguax::server
+pub mod caguax::server::blocking
+pub struct caguax::server::blocking::Server
+impl caguax::server::blocking::Server
+pub fn caguax::server::blocking::Server::addresses(&self) -> &[core::net::socket_addr::SocketAddr]
+pub fn caguax::server::blocking::Server::builder(impl caguax::route::Routing + 'static) -> caguax::server::blocking::ServerBuilder
+pub fn caguax::server::blocking::Server::port(&self) -> u16
+pub fn caguax::server::blocking::Server::server(&self) -> &caguax::server::Server
+pub fn caguax::server::blocking::Server::shutdown(self)
+pub fn caguax::server::blocking::Server::tunnel_address(&self, &caguax::Tunnel) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub struct caguax::server::blocking::ServerBuilder
+impl caguax::server::blocking::ServerBuilder
+pub fn caguax::server::blocking::ServerBuilder::start(self) -> caguax::error::Result<caguax::server::blocking::Server>
+pub fn caguax::server::blocking::ServerBuilder::with(self, impl core::ops::function::FnOnce(caguax::server::ServerBuilder) -> caguax::server::ServerBuilder) -> Self
+pub fn caguax::server::blocking::ServerBuilder::worker_threads(self, usize) -> Self
+impl core::convert::From<caguax::server::ServerBuilder> for caguax::server::blocking::ServerBuilder
+pub fn caguax::server::blocking::ServerBuilder::from(caguax::server::ServerBuilder) -> Self
+pub struct caguax::server::IdleRead<S>
+impl<S> caguax::server::IdleRead<S>
+pub fn caguax::server::IdleRead<S>::new(S, core::option::Option<core::time::Duration>) -> Self
+impl<S: tokio::io::async_read::AsyncRead + core::marker::Unpin> tokio::io::async_read::AsyncRead for caguax::server::IdleRead<S>
+pub fn caguax::server::IdleRead<S>::poll_read(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>, &mut tokio::io::read_buf::ReadBuf<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+impl<S: tokio::io::async_write::AsyncWrite + core::marker::Unpin> tokio::io::async_write::AsyncWrite for caguax::server::IdleRead<S>
+pub fn caguax::server::IdleRead<S>::poll_flush(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+pub fn caguax::server::IdleRead<S>::poll_shutdown(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+pub fn caguax::server::IdleRead<S>::poll_write(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>, &[u8]) -> core::task::poll::Poll<core::io::error::Result<usize>>
+#[non_exhaustive] pub struct caguax::server::OpenOptions
+pub caguax::server::OpenOptions::forward_http: bool
+pub struct caguax::server::RelayOptions
+pub caguax::server::RelayOptions::buffer: usize
+pub caguax::server::RelayOptions::close_timeout: core::time::Duration
+pub caguax::server::RelayOptions::end_both: bool
+pub caguax::server::RelayOptions::idle_timeout: core::option::Option<core::time::Duration>
+#[non_exhaustive] pub struct caguax::server::RelaySession
+pub caguax::server::RelaySession::before_server: core::option::Option<bytes::bytes::Bytes>
+pub caguax::server::RelaySession::client_tls: bool
+pub caguax::server::RelaySession::recording: core::option::Option<alloc::sync::Arc<caguax::record::Recording>>
+pub struct caguax::server::Server
+impl caguax::server::Server
+pub fn caguax::server::Server::addresses(&self) -> &[core::net::socket_addr::SocketAddr]
+pub fn caguax::server::Server::builder(impl caguax::route::Routing + 'static) -> caguax::server::ServerBuilder
+pub fn caguax::server::Server::direct() -> caguax::server::ServerBuilder
+pub fn caguax::server::Server::interceptor(&self) -> core::option::Option<alloc::sync::Arc<caguax::intercept::Interceptor>>
+pub fn caguax::server::Server::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
+pub async fn caguax::server::Server::open_upstream(&self, &caguax::connection::Connection, &caguax::route::Route, caguax::server::OpenOptions) -> caguax::error::Result<caguax::upstream::UpstreamStream>
+pub fn caguax::server::Server::port(&self) -> u16
+pub fn caguax::server::Server::recorders(&self) -> alloc::vec::Vec<alloc::sync::Arc<dyn caguax::record::Recorder>>
+pub async fn caguax::server::Server::relay_session<C>(&self, &caguax::connection::Connection, &caguax::route::Route, C, caguax::upstream::UpstreamStream, caguax::server::RelaySession) where C: tokio::io::async_read::AsyncRead + tokio::io::async_write::AsyncWrite + core::marker::Unpin + core::marker::Send
+pub async fn caguax::server::Server::reload(&self, caguax::settings::ServerSettings, impl caguax::route::Routing + 'static) -> caguax::error::Result<()>
+pub fn caguax::server::Server::router(&self) -> alloc::sync::Arc<dyn caguax::route::Routing>
+pub async fn caguax::server::Server::serve(&self)
+pub fn caguax::server::Server::settings(&self) -> caguax::settings::ServerSettings
+pub async fn caguax::server::Server::shutdown(self)
+pub fn caguax::server::Server::start_recording(&self, &caguax::connection::Connection, &caguax::route::Route, core::option::Option<core::net::socket_addr::SocketAddr>, &caguax::upstream::UpstreamStream) -> core::option::Option<alloc::sync::Arc<caguax::record::Recording>>
+pub fn caguax::server::Server::tunnel_address(&self, &caguax::Tunnel) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub fn caguax::server::Server::tunnels(&self) -> impl core::iter::traits::iterator::Iterator<Item = (&caguax::Tunnel, core::net::socket_addr::SocketAddr)>
+impl core::fmt::Debug for caguax::server::Server
+pub fn caguax::server::Server::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::ops::drop::Drop for caguax::server::Server
+pub fn caguax::server::Server::drop(&mut self)
+pub struct caguax::server::ServerBuilder
+impl caguax::server::ServerBuilder
+pub fn caguax::server::ServerBuilder::allow_remote(self, bool) -> Self
+pub fn caguax::server::ServerBuilder::ca(self, coqui_sslcontext::issue::CertificateAuthority) -> caguax::error::Result<Self>
+pub fn caguax::server::ServerBuilder::egress(self, caguax::upstream::Egress) -> Self
+pub fn caguax::server::ServerBuilder::interceptor(self, caguax::intercept::Interceptor) -> Self
+pub fn caguax::server::ServerBuilder::listen(self, impl core::iter::traits::collect::IntoIterator<Item = caguax::listen::ListenAddr>) -> Self
+pub fn caguax::server::ServerBuilder::recorder(self, impl caguax::record::Recorder + 'static) -> Self
+pub fn caguax::server::ServerBuilder::settings(self, caguax::settings::ServerSettings) -> Self
+pub async fn caguax::server::ServerBuilder::start(self) -> caguax::error::Result<caguax::server::Server>
+pub fn caguax::server::ServerBuilder::tunnel(self, impl core::convert::Into<caguax::Tunnel>) -> Self
+pub fn caguax::server::ServerBuilder::tunnels<T: core::convert::Into<caguax::Tunnel>>(self, impl core::iter::traits::collect::IntoIterator<Item = T>) -> Self
+impl core::convert::From<caguax::server::ServerBuilder> for caguax::server::blocking::ServerBuilder
+pub fn caguax::server::blocking::ServerBuilder::from(caguax::server::ServerBuilder) -> Self
+impl core::fmt::Debug for caguax::server::ServerBuilder
+pub fn caguax::server::ServerBuilder::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::server::Tunnel
+impl caguax::Tunnel
+pub fn caguax::Tunnel::builder(&str, &str) -> caguax::error::Result<caguax::TunnelBuilder>
+pub fn caguax::Tunnel::listen(&self) -> caguax::listen::ListenAddr
+pub fn caguax::Tunnel::name(&self) -> &str
+pub fn caguax::Tunnel::route(&self) -> core::option::Option<&caguax::route::Route>
+pub fn caguax::Tunnel::target(&self) -> &str
+pub fn caguax::Tunnel::target_host_port(&self) -> (alloc::string::String, u16)
+impl core::convert::From<caguax::TunnelBuilder> for caguax::Tunnel
+pub fn caguax::Tunnel::from(caguax::TunnelBuilder) -> Self
+pub struct caguax::server::TunnelBuilder
+impl caguax::TunnelBuilder
+pub fn caguax::TunnelBuilder::build(self) -> caguax::Tunnel
+pub fn caguax::TunnelBuilder::name(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::TunnelBuilder::route(self, impl core::convert::Into<caguax::route::Route>) -> Self
+impl core::convert::From<caguax::TunnelBuilder> for caguax::Tunnel
+pub fn caguax::Tunnel::from(caguax::TunnelBuilder) -> Self
+pub async fn caguax::server::relay<A, B>(A, B, caguax::server::RelayOptions) where A: tokio::io::async_read::AsyncRead + tokio::io::async_write::AsyncWrite + core::marker::Unpin, B: tokio::io::async_read::AsyncRead + tokio::io::async_write::AsyncWrite + core::marker::Unpin
+pub mod caguax::settings
+#[non_exhaustive] pub struct caguax::settings::CaSettings
+pub caguax::settings::CaSettings::certificate: core::option::Option<std::path::PathBuf>
+pub caguax::settings::CaSettings::key: core::option::Option<std::path::PathBuf>
+pub caguax::settings::CaSettings::password_env: core::option::Option<alloc::string::String>
+pub caguax::settings::CaSettings::validity: core::time::Duration
+impl caguax::settings::CaSettings
+pub const caguax::settings::CaSettings::DEFAULT_VALIDITY: core::time::Duration
+pub fn caguax::settings::CaSettings::is_configured(&self) -> bool
+impl core::default::Default for caguax::settings::CaSettings
+pub fn caguax::settings::CaSettings::default() -> Self
+#[non_exhaustive] pub struct caguax::settings::InterceptSettings
+pub caguax::settings::InterceptSettings::leaf_cache_capacity: usize
+pub caguax::settings::InterceptSettings::leaf_validity: core::time::Duration
+impl core::default::Default for caguax::settings::InterceptSettings
+pub fn caguax::settings::InterceptSettings::default() -> Self
+#[non_exhaustive] pub struct caguax::settings::ServerSettings
+pub caguax::settings::ServerSettings::accept_error_delay: core::time::Duration
+pub caguax::settings::ServerSettings::allow_remote: bool
+pub caguax::settings::ServerSettings::ca: caguax::settings::CaSettings
+pub caguax::settings::ServerSettings::close_timeout: core::time::Duration
+pub caguax::settings::ServerSettings::connect_timeout: core::time::Duration
+pub caguax::settings::ServerSettings::egress: core::option::Option<caguax::upstream::Egress>
+pub caguax::settings::ServerSettings::happy_eyeballs_delay: core::time::Duration
+pub caguax::settings::ServerSettings::idle_timeout: core::option::Option<core::time::Duration>
+pub caguax::settings::ServerSettings::intercept: caguax::settings::InterceptSettings
+pub caguax::settings::ServerSettings::keep_alive: bool
+pub caguax::settings::ServerSettings::keylog: core::option::Option<std::path::PathBuf>
+pub caguax::settings::ServerSettings::listen: alloc::vec::Vec<caguax::listen::ListenAddr>
+pub caguax::settings::ServerSettings::listen_backlog: u32
+pub caguax::settings::ServerSettings::log_traffic: bool
+pub caguax::settings::ServerSettings::max_connections: usize
+pub caguax::settings::ServerSettings::max_head_bytes: usize
+pub caguax::settings::ServerSettings::max_headers: usize
+pub caguax::settings::ServerSettings::record: core::option::Option<std::path::PathBuf>
+pub caguax::settings::ServerSettings::relay_buffer: usize
+pub caguax::settings::ServerSettings::warn_interval: core::time::Duration
+impl caguax::settings::ServerSettings
+pub fn caguax::settings::ServerSettings::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn caguax::settings::ServerSettings::validate(&self) -> caguax::error::Result<()>
+impl core::default::Default for caguax::settings::ServerSettings
+pub fn caguax::settings::ServerSettings::default() -> Self
+pub fn caguax::settings::parse_duration(&str) -> caguax::error::Result<core::time::Duration>
+pub mod caguax::upstream
+#[non_exhaustive] pub enum caguax::upstream::Egress
+pub caguax::upstream::Egress::Auto
+pub caguax::upstream::Egress::Direct
+pub caguax::upstream::Egress::Environment
+pub caguax::upstream::Egress::Pac(alloc::string::String)
+pub caguax::upstream::Egress::Proxy(alloc::string::String)
+pub caguax::upstream::Egress::Resolver(coqui_proxy::resolver::Resolver)
+pub caguax::upstream::Egress::System
+impl caguax::upstream::Egress
+pub fn caguax::upstream::Egress::resolver(&self) -> caguax::error::Result<coqui_proxy::resolver::Resolver>
+pub fn caguax::upstream::Egress::spelling(&self) -> core::option::Option<alloc::string::String>
+impl core::convert::From<coqui_proxy::resolver::Resolver> for caguax::upstream::Egress
+pub fn caguax::upstream::Egress::from(coqui_proxy::resolver::Resolver) -> Self
+impl core::str::traits::FromStr for caguax::upstream::Egress
+pub type caguax::upstream::Egress::Err = caguax::error::Error
+pub fn caguax::upstream::Egress::from_str(&str) -> caguax::error::Result<Self>
+pub struct caguax::upstream::ConnectOptions
+impl caguax::upstream::ConnectOptions
+pub fn caguax::upstream::ConnectOptions::connect_timeout(&self) -> core::time::Duration
+pub fn caguax::upstream::ConnectOptions::egress(self, caguax::upstream::Egress) -> Self
+pub fn caguax::upstream::ConnectOptions::egress_ref(&self) -> core::option::Option<&caguax::upstream::Egress>
+pub fn caguax::upstream::ConnectOptions::forward_http(self, bool) -> Self
+pub fn caguax::upstream::ConnectOptions::happy_eyeballs_delay(self, core::time::Duration) -> Self
+pub fn caguax::upstream::ConnectOptions::keylog(self, alloc::sync::Arc<dyn rustls::key_log::KeyLog>) -> Self
+pub fn caguax::upstream::ConnectOptions::timeout(self, core::time::Duration) -> Self
+pub async fn caguax::upstream::ConnectOptions::warm_up(&self) -> caguax::error::Result<()>
+impl core::default::Default for caguax::upstream::ConnectOptions
+pub fn caguax::upstream::ConnectOptions::default() -> Self
+impl core::fmt::Debug for caguax::upstream::ConnectOptions
+pub fn caguax::upstream::ConnectOptions::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::upstream::UpstreamStream
+impl caguax::upstream::UpstreamStream
+pub fn caguax::upstream::UpstreamStream::forward(&self) -> bool
+pub fn caguax::upstream::UpstreamStream::from_io(impl tokio::io::async_read::AsyncRead + tokio::io::async_write::AsyncWrite + core::marker::Send + core::marker::Unpin + 'static, bool) -> Self
+pub fn caguax::upstream::UpstreamStream::proxy_authorization(&self) -> core::option::Option<&str>
+pub fn caguax::upstream::UpstreamStream::server(&self) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub fn caguax::upstream::UpstreamStream::tls(&self) -> bool
+pub fn caguax::upstream::UpstreamStream::via(&self) -> core::option::Option<&str>
+impl core::fmt::Debug for caguax::upstream::UpstreamStream
+pub fn caguax::upstream::UpstreamStream::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl tokio::io::async_read::AsyncRead for caguax::upstream::UpstreamStream
+pub fn caguax::upstream::UpstreamStream::poll_read(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>, &mut tokio::io::read_buf::ReadBuf<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+impl tokio::io::async_write::AsyncWrite for caguax::upstream::UpstreamStream
+pub fn caguax::upstream::UpstreamStream::poll_flush(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+pub fn caguax::upstream::UpstreamStream::poll_shutdown(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+pub fn caguax::upstream::UpstreamStream::poll_write(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>, &[u8]) -> core::task::poll::Poll<core::io::error::Result<usize>>
+pub async fn caguax::upstream::connect(&caguax::connection::Connection, &caguax::route::Route, &caguax::upstream::ConnectOptions) -> caguax::error::Result<caguax::upstream::UpstreamStream>
+pub async fn caguax::upstream::resolve_upstream(&caguax::connection::Connection, &caguax::route::Route, core::option::Option<&caguax::upstream::Egress>) -> caguax::error::Result<alloc::vec::Vec<core::option::Option<coqui_proxy::proxy::Proxy>>>
+#[non_exhaustive] pub enum caguax::Action
+pub caguax::Action::Direct
+pub caguax::Action::Reject
+pub caguax::Action::Tls
+impl caguax::route::Action
+pub fn caguax::route::Action::as_str(self) -> &'static str
+impl core::fmt::Display for caguax::route::Action
+pub fn caguax::route::Action::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::str::traits::FromStr for caguax::route::Action
+pub type caguax::route::Action::Err = caguax::error::Error
+pub fn caguax::route::Action::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::Backend
+pub caguax::Backend::Cng
+pub caguax::Backend::Keychain
+pub caguax::Backend::Pkcs11
+pub caguax::Backend::System
+impl caguax::credential::Backend
+pub fn caguax::credential::Backend::as_str(self) -> &'static str
+impl core::fmt::Display for caguax::credential::Backend
+pub fn caguax::credential::Backend::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::str::traits::FromStr for caguax::credential::Backend
+pub type caguax::credential::Backend::Err = caguax::error::Error
+pub fn caguax::credential::Backend::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::Egress
+pub caguax::Egress::Auto
+pub caguax::Egress::Direct
+pub caguax::Egress::Environment
+pub caguax::Egress::Pac(alloc::string::String)
+pub caguax::Egress::Proxy(alloc::string::String)
+pub caguax::Egress::Resolver(coqui_proxy::resolver::Resolver)
+pub caguax::Egress::System
+impl caguax::upstream::Egress
+pub fn caguax::upstream::Egress::resolver(&self) -> caguax::error::Result<coqui_proxy::resolver::Resolver>
+pub fn caguax::upstream::Egress::spelling(&self) -> core::option::Option<alloc::string::String>
+impl core::convert::From<coqui_proxy::resolver::Resolver> for caguax::upstream::Egress
+pub fn caguax::upstream::Egress::from(coqui_proxy::resolver::Resolver) -> Self
+impl core::str::traits::FromStr for caguax::upstream::Egress
+pub type caguax::upstream::Egress::Err = caguax::error::Error
+pub fn caguax::upstream::Egress::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::Error
+pub caguax::Error::Config(caguax::error::ConfigError)
+pub caguax::Error::CredentialUnavailable(caguax::error::CredentialUnavailableError)
+pub caguax::Error::Io(core::io::error::Error)
+pub caguax::Error::Proxy(coqui_proxy::error::Error)
+pub caguax::Error::Rejected(caguax::error::RejectedError)
+pub caguax::Error::Timeout(&'static str)
+pub caguax::Error::Tls(coqui_sslcontext::error::Error)
+pub caguax::Error::Upstream(caguax::error::UpstreamError)
+#[non_exhaustive] pub enum caguax::Matcher
+pub caguax::Matcher::All
+pub caguax::Matcher::AllOf(alloc::vec::Vec<caguax::rules::Matcher>)
+pub caguax::Matcher::AnyOf(alloc::vec::Vec<caguax::rules::Matcher>)
+pub caguax::Matcher::Custom(caguax::rules::CustomMatcher)
+pub caguax::Matcher::Host(alloc::vec::Vec<alloc::string::String>)
+pub caguax::Matcher::HostRegex(caguax::rules::RegexMatcher)
+pub caguax::Matcher::Listener(alloc::vec::Vec<alloc::string::String>)
+pub caguax::Matcher::Network(alloc::vec::Vec<coqui_net_acl::IpNet>)
+pub caguax::Matcher::Not(alloc::boxed::Box<caguax::rules::Matcher>)
+pub caguax::Matcher::Path(caguax::rules::RegexMatcher)
+pub caguax::Matcher::Port(alloc::vec::Vec<caguax::rules::PortSpec>)
+pub caguax::Matcher::Scheme(alloc::vec::Vec<caguax::connection::Scheme>)
+impl caguax::rules::Matcher
+pub fn caguax::rules::Matcher::custom(impl core::ops::function::Fn(&caguax::connection::Connection) -> bool + core::marker::Send + core::marker::Sync + 'static) -> Self
+pub fn caguax::rules::Matcher::host<I, S>(I) -> caguax::error::Result<Self> where I: core::iter::traits::collect::IntoIterator<Item = S>, S: core::convert::Into<alloc::string::String>
+pub fn caguax::rules::Matcher::host_regex(&str, bool) -> caguax::error::Result<Self>
+pub fn caguax::rules::Matcher::listener<I, S>(I) -> Self where I: core::iter::traits::collect::IntoIterator<Item = S>, S: core::convert::Into<alloc::string::String>
+pub fn caguax::rules::Matcher::matches(&self, &caguax::connection::Connection) -> bool
+pub fn caguax::rules::Matcher::network<I>(I) -> caguax::error::Result<Self> where I: core::iter::traits::collect::IntoIterator<Item = coqui_net_acl::IpNet>
+pub fn caguax::rules::Matcher::path(&str) -> caguax::error::Result<Self>
+pub fn caguax::rules::Matcher::port<I, P>(I) -> caguax::error::Result<Self> where I: core::iter::traits::collect::IntoIterator<Item = P>, P: core::convert::Into<caguax::rules::PortSpec>
+pub fn caguax::rules::Matcher::scheme<I>(I) -> caguax::error::Result<Self> where I: core::iter::traits::collect::IntoIterator<Item = caguax::connection::Scheme>
+impl core::ops::bit::BitAnd for caguax::rules::Matcher
+pub type caguax::rules::Matcher::Output = caguax::rules::Matcher
+pub fn caguax::rules::Matcher::bitand(self, caguax::rules::Matcher) -> caguax::rules::Matcher
+impl core::ops::bit::BitOr for caguax::rules::Matcher
+pub type caguax::rules::Matcher::Output = caguax::rules::Matcher
+pub fn caguax::rules::Matcher::bitor(self, caguax::rules::Matcher) -> caguax::rules::Matcher
+impl core::ops::bit::Not for caguax::rules::Matcher
+pub type caguax::rules::Matcher::Output = caguax::rules::Matcher
+pub fn caguax::rules::Matcher::not(self) -> caguax::rules::Matcher
+impl core::str::traits::FromStr for caguax::rules::Matcher
+pub type caguax::rules::Matcher::Err = caguax::error::Error
+pub fn caguax::rules::Matcher::from_str(&str) -> caguax::error::Result<Self>
+pub enum caguax::PortSpec
+pub caguax::PortSpec::Range(core::ops::range::RangeInclusive<u16>)
+pub caguax::PortSpec::Single(u16)
+impl caguax::rules::PortSpec
+pub fn caguax::rules::PortSpec::contains(&self, u16) -> bool
+impl core::convert::From<core::ops::range::RangeInclusive<u16>> for caguax::rules::PortSpec
+pub fn caguax::rules::PortSpec::from(core::ops::range::RangeInclusive<u16>) -> Self
+impl core::convert::From<u16> for caguax::rules::PortSpec
+pub fn caguax::rules::PortSpec::from(u16) -> Self
+#[non_exhaustive] pub enum caguax::Scheme
+pub caguax::Scheme::Http
+pub caguax::Scheme::Https
+pub caguax::Scheme::Tcp
+impl caguax::connection::Scheme
+pub fn caguax::connection::Scheme::as_str(self) -> &'static str
+impl core::fmt::Display for caguax::connection::Scheme
+pub fn caguax::connection::Scheme::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::str::traits::FromStr for caguax::connection::Scheme
+pub type caguax::connection::Scheme::Err = caguax::error::Error
+pub fn caguax::connection::Scheme::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::StoreLocation
+pub caguax::StoreLocation::Machine
+pub caguax::StoreLocation::User
+impl core::str::traits::FromStr for caguax::credential::StoreLocation
+pub type caguax::credential::StoreLocation::Err = caguax::error::Error
+pub fn caguax::credential::StoreLocation::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::TlsSource
+pub caguax::TlsSource::Config(alloc::sync::Arc<rustls::client::client_conn::ClientConfig>)
+pub caguax::TlsSource::Credential(alloc::sync::Arc<caguax::credential::Credential>)
+impl core::convert::From<alloc::sync::Arc<caguax::credential::Credential>> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(alloc::sync::Arc<caguax::credential::Credential>) -> Self
+impl core::convert::From<alloc::sync::Arc<rustls::client::client_conn::ClientConfig>> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(alloc::sync::Arc<rustls::client::client_conn::ClientConfig>) -> Self
+impl core::convert::From<caguax::credential::Credential> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(caguax::credential::Credential) -> Self
+impl core::convert::From<caguax::credential::CredentialBuilder> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(caguax::credential::CredentialBuilder) -> Self
+#[non_exhaustive] pub struct caguax::CaOptions
+pub caguax::CaOptions::common_name: alloc::string::String
+pub caguax::CaOptions::constrain: bool
+pub caguax::CaOptions::validity: core::time::Duration
+impl core::default::Default for caguax::intercept::CaOptions
+pub fn caguax::intercept::CaOptions::default() -> Self
+#[non_exhaustive] pub struct caguax::CaSettings
+pub caguax::CaSettings::certificate: core::option::Option<std::path::PathBuf>
+pub caguax::CaSettings::key: core::option::Option<std::path::PathBuf>
+pub caguax::CaSettings::password_env: core::option::Option<alloc::string::String>
+pub caguax::CaSettings::validity: core::time::Duration
+impl caguax::settings::CaSettings
+pub const caguax::settings::CaSettings::DEFAULT_VALIDITY: core::time::Duration
+pub fn caguax::settings::CaSettings::is_configured(&self) -> bool
+impl core::default::Default for caguax::settings::CaSettings
+pub fn caguax::settings::CaSettings::default() -> Self
+pub struct caguax::ConfigError
+impl caguax::error::ConfigError
+pub fn caguax::error::ConfigError::at_path(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::error::ConfigError::at_position(self, core::option::Option<usize>, core::option::Option<usize>) -> Self
+pub fn caguax::error::ConfigError::column(&self) -> core::option::Option<usize>
+pub fn caguax::error::ConfigError::line(&self) -> core::option::Option<usize>
+pub fn caguax::error::ConfigError::message(&self) -> &str
+pub fn caguax::error::ConfigError::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::error::ConfigError::path(&self) -> core::option::Option<&str>
+impl core::error::Error for caguax::error::ConfigError
+impl core::fmt::Display for caguax::error::ConfigError
+pub fn caguax::error::ConfigError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::ConnectOptions
+impl caguax::upstream::ConnectOptions
+pub fn caguax::upstream::ConnectOptions::connect_timeout(&self) -> core::time::Duration
+pub fn caguax::upstream::ConnectOptions::egress(self, caguax::upstream::Egress) -> Self
+pub fn caguax::upstream::ConnectOptions::egress_ref(&self) -> core::option::Option<&caguax::upstream::Egress>
+pub fn caguax::upstream::ConnectOptions::forward_http(self, bool) -> Self
+pub fn caguax::upstream::ConnectOptions::happy_eyeballs_delay(self, core::time::Duration) -> Self
+pub fn caguax::upstream::ConnectOptions::keylog(self, alloc::sync::Arc<dyn rustls::key_log::KeyLog>) -> Self
+pub fn caguax::upstream::ConnectOptions::timeout(self, core::time::Duration) -> Self
+pub async fn caguax::upstream::ConnectOptions::warm_up(&self) -> caguax::error::Result<()>
+impl core::default::Default for caguax::upstream::ConnectOptions
+pub fn caguax::upstream::ConnectOptions::default() -> Self
+impl core::fmt::Debug for caguax::upstream::ConnectOptions
+pub fn caguax::upstream::ConnectOptions::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::Connection
+impl caguax::connection::Connection
+pub fn caguax::connection::Connection::authority(&self) -> alloc::string::String
+pub fn caguax::connection::Connection::builder(&str, u16) -> caguax::connection::ConnectionBuilder
+pub fn caguax::connection::Connection::client(&self) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub fn caguax::connection::Connection::host(&self) -> &str
+pub fn caguax::connection::Connection::listener(&self) -> &str
+pub fn caguax::connection::Connection::new(&str, u16) -> caguax::error::Result<Self>
+pub fn caguax::connection::Connection::path(&self) -> core::option::Option<&str>
+pub fn caguax::connection::Connection::port(&self) -> u16
+pub fn caguax::connection::Connection::scheme(&self) -> caguax::connection::Scheme
+pub fn caguax::connection::Connection::url(&self) -> alloc::string::String
+pub struct caguax::ConnectionBuilder
+impl caguax::connection::ConnectionBuilder
+pub fn caguax::connection::ConnectionBuilder::build(self) -> caguax::error::Result<caguax::connection::Connection>
+pub fn caguax::connection::ConnectionBuilder::client(self, core::net::socket_addr::SocketAddr) -> Self
+pub fn caguax::connection::ConnectionBuilder::listener(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::connection::ConnectionBuilder::path(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::connection::ConnectionBuilder::scheme(self, caguax::connection::Scheme) -> Self
+pub struct caguax::Credential
+impl caguax::credential::Credential
+pub fn caguax::credential::Credential::backend(&self) -> core::option::Option<caguax::credential::Backend>
+pub fn caguax::credential::Credential::from_pem(impl core::convert::Into<alloc::vec::Vec<u8>>, core::option::Option<alloc::vec::Vec<u8>>, coqui_sslcontext::password::KeyPassword) -> caguax::credential::CredentialBuilder
+pub fn caguax::credential::Credential::identity(coqui_sslcontext::identity::Identity) -> caguax::credential::CredentialBuilder
+pub fn caguax::credential::Credential::identity_with(impl core::ops::function::Fn() -> caguax::error::Result<coqui_sslcontext::identity::Identity> + core::marker::Send + core::marker::Sync + 'static) -> caguax::credential::CredentialBuilder
+pub async fn caguax::credential::Credential::invalidate(&self)
+pub fn caguax::credential::Credential::keystore(caguax::credential::Backend) -> caguax::credential::CredentialBuilder
+pub fn caguax::credential::Credential::name(&self) -> &str
+pub fn caguax::credential::Credential::options(&self) -> core::option::Option<&caguax::credential::KeystoreOptions>
+pub fn caguax::credential::Credential::query(&self) -> core::option::Option<&coqui_sslcontext::select::IdentityQuery>
+pub async fn caguax::credential::Credential::tls_config(&self, &str) -> caguax::error::Result<alloc::sync::Arc<rustls::client::client_conn::ClientConfig>>
+pub fn caguax::credential::Credential::verification_disabled(&self) -> bool
+impl caguax::credential::Credential
+pub fn caguax::credential::Credential::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
+impl core::convert::From<caguax::credential::Credential> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(caguax::credential::Credential) -> Self
+impl core::fmt::Debug for caguax::credential::Credential
+pub fn caguax::credential::Credential::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::CredentialBuilder
+impl caguax::credential::CredentialBuilder
+pub fn caguax::credential::CredentialBuilder::build(self) -> caguax::credential::Credential
+pub fn caguax::credential::CredentialBuilder::cadata(self, impl core::convert::Into<alloc::vec::Vec<u8>>) -> Self
+pub fn caguax::credential::CredentialBuilder::cafile(self, impl core::convert::Into<std::path::PathBuf>) -> Self
+pub fn caguax::credential::CredentialBuilder::capath(self, impl core::convert::Into<std::path::PathBuf>) -> Self
+pub fn caguax::credential::CredentialBuilder::keystore_options(self, caguax::credential::KeystoreOptions) -> Self
+pub fn caguax::credential::CredentialBuilder::minimum_version(self, coqui_sslcontext::settings::TlsVersion) -> Self
+pub fn caguax::credential::CredentialBuilder::name(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::credential::CredentialBuilder::query(self, coqui_sslcontext::select::IdentityQuery) -> Self
+pub fn caguax::credential::CredentialBuilder::verify(self, bool) -> Self
+impl core::convert::From<caguax::credential::CredentialBuilder> for caguax::route::TlsSource
+pub fn caguax::route::TlsSource::from(caguax::credential::CredentialBuilder) -> Self
+pub struct caguax::CredentialUnavailableError
+impl caguax::error::CredentialUnavailableError
+pub fn caguax::error::CredentialUnavailableError::credential(&self) -> &str
+impl core::error::Error for caguax::error::CredentialUnavailableError
+impl core::fmt::Display for caguax::error::CredentialUnavailableError
+pub fn caguax::error::CredentialUnavailableError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::CustomMatcher(_)
+impl core::cmp::PartialEq for caguax::rules::CustomMatcher
+pub fn caguax::rules::CustomMatcher::eq(&self, &Self) -> bool
+impl core::fmt::Debug for caguax::rules::CustomMatcher
+pub fn caguax::rules::CustomMatcher::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::Explanation<'a>
+pub caguax::Explanation::route: &'a caguax::route::Route
+pub caguax::Explanation::rule: core::option::Option<&'a caguax::route::Rule>
+#[non_exhaustive] pub struct caguax::InterceptSettings
+pub caguax::InterceptSettings::leaf_cache_capacity: usize
+pub caguax::InterceptSettings::leaf_validity: core::time::Duration
+impl core::default::Default for caguax::settings::InterceptSettings
+pub fn caguax::settings::InterceptSettings::default() -> Self
+pub struct caguax::Interceptor
+impl caguax::intercept::Interceptor
+pub async fn caguax::intercept::Interceptor::accept<IO>(&alloc::sync::Arc<Self>, &str, IO, core::time::Duration) -> caguax::error::Result<tokio_rustls::server::TlsStream<IO>> where IO: tokio::io::async_read::AsyncRead + tokio::io::async_write::AsyncWrite + core::marker::Unpin
+pub fn caguax::intercept::Interceptor::ca(&self) -> &coqui_sslcontext::issue::CertificateAuthority
+pub fn caguax::intercept::Interceptor::keylog(&self) -> core::option::Option<&alloc::sync::Arc<dyn rustls::key_log::KeyLog>>
+pub fn caguax::intercept::Interceptor::new(coqui_sslcontext::issue::CertificateAuthority, caguax::settings::InterceptSettings) -> caguax::error::Result<Self>
+pub fn caguax::intercept::Interceptor::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn caguax::intercept::Interceptor::server_config(&self, &str) -> caguax::error::Result<alloc::sync::Arc<rustls::server::server_conn::ServerConfig>>
+pub fn caguax::intercept::Interceptor::settings(&self) -> &caguax::settings::InterceptSettings
+pub fn caguax::intercept::Interceptor::with_keylog(self, alloc::sync::Arc<dyn rustls::key_log::KeyLog>) -> Self
+impl core::fmt::Debug for caguax::intercept::Interceptor
+pub fn caguax::intercept::Interceptor::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+#[non_exhaustive] pub struct caguax::KeystoreOptions
+pub caguax::KeystoreOptions::keychain: core::option::Option<std::path::PathBuf>
+pub caguax::KeystoreOptions::location: caguax::credential::StoreLocation
+pub caguax::KeystoreOptions::module: core::option::Option<std::path::PathBuf>
+pub caguax::KeystoreOptions::pin: coqui_sslcontext::pin::Pin
+pub caguax::KeystoreOptions::slot: core::option::Option<u64>
+pub caguax::KeystoreOptions::store: core::option::Option<alloc::string::String>
+pub caguax::KeystoreOptions::token: core::option::Option<alloc::string::String>
+pub struct caguax::ListenAddr
+impl caguax::listen::ListenAddr
+pub fn caguax::listen::ListenAddr::address(&self) -> core::net::ip_addr::IpAddr
+pub fn caguax::listen::ListenAddr::is_local(&self) -> bool
+pub fn caguax::listen::ListenAddr::loopback() -> Self
+pub fn caguax::listen::ListenAddr::new(core::net::ip_addr::IpAddr, u16) -> Self
+pub fn caguax::listen::ListenAddr::port(&self) -> u16
+pub fn caguax::listen::ListenAddr::socket_addr(&self) -> core::net::socket_addr::SocketAddr
+impl core::convert::From<core::net::socket_addr::SocketAddr> for caguax::listen::ListenAddr
+pub fn caguax::listen::ListenAddr::from(core::net::socket_addr::SocketAddr) -> Self
+impl core::fmt::Display for caguax::listen::ListenAddr
+pub fn caguax::listen::ListenAddr::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::str::traits::FromStr for caguax::listen::ListenAddr
+pub type caguax::listen::ListenAddr::Err = caguax::error::Error
+pub fn caguax::listen::ListenAddr::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub struct caguax::OpenOptions
+pub caguax::OpenOptions::forward_http: bool
+pub struct caguax::RejectedError
+impl caguax::error::RejectedError
+pub fn caguax::error::RejectedError::new(impl core::convert::Into<alloc::string::String>) -> Self
+impl core::error::Error for caguax::error::RejectedError
+impl core::fmt::Display for caguax::error::RejectedError
+pub fn caguax::error::RejectedError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+#[non_exhaustive] pub struct caguax::RelaySession
+pub caguax::RelaySession::before_server: core::option::Option<bytes::bytes::Bytes>
+pub caguax::RelaySession::client_tls: bool
+pub caguax::RelaySession::recording: core::option::Option<alloc::sync::Arc<caguax::record::Recording>>
+pub struct caguax::Route
+impl caguax::route::Route
+pub fn caguax::route::Route::action(&self) -> caguax::route::Action
+pub fn caguax::route::Route::direct() -> caguax::route::RouteBuilder
+pub fn caguax::route::Route::name(&self) -> &str
+pub fn caguax::route::Route::reject() -> caguax::route::RouteBuilder
+pub fn caguax::route::Route::tls(&self) -> core::option::Option<&caguax::route::TlsSource>
+pub fn caguax::route::Route::upstream(&self) -> core::option::Option<&caguax::route::UpstreamSpec>
+pub fn caguax::route::Route::with_tls(impl core::convert::Into<caguax::route::TlsSource>) -> caguax::route::RouteBuilder
+impl core::convert::From<caguax::route::RouteBuilder> for caguax::route::Route
+pub fn caguax::route::Route::from(caguax::route::RouteBuilder) -> Self
+impl core::default::Default for caguax::route::Route
+pub fn caguax::route::Route::default() -> Self
+pub struct caguax::RouteBuilder
+impl caguax::route::RouteBuilder
+pub fn caguax::route::RouteBuilder::build(self) -> caguax::route::Route
+pub fn caguax::route::RouteBuilder::name(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::route::RouteBuilder::upstream(self, impl core::convert::Into<caguax::route::UpstreamSpec>) -> Self
+impl core::convert::From<caguax::route::RouteBuilder> for caguax::route::Route
+pub fn caguax::route::Route::from(caguax::route::RouteBuilder) -> Self
+pub struct caguax::Router
+impl caguax::route::Router
+pub fn caguax::route::Router::add(&mut self, caguax::route::Rule) -> &caguax::route::Rule
+pub fn caguax::route::Router::add_match(&mut self, impl core::convert::Into<caguax::rules::Matcher>, impl core::convert::Into<caguax::route::Route>) -> &caguax::route::Rule
+pub fn caguax::route::Router::builder() -> caguax::route::RouterBuilder
+pub fn caguax::route::Router::default_route(&self) -> &caguax::route::Route
+pub fn caguax::route::Router::explain(&self, &caguax::connection::Connection) -> caguax::route::Explanation<'_>
+pub fn caguax::route::Router::new() -> Self
+pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> &caguax::route::Route
+pub fn caguax::route::Router::rules(&self) -> &[caguax::route::Rule]
+impl caguax::route::Router
+pub fn caguax::route::Router::pac_script(&self, &str, core::option::Option<&caguax::upstream::Egress>) -> alloc::string::String
+impl caguax::route::Routing for caguax::route::Router
+pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> caguax::route::Route
+pub fn caguax::route::Router::router(&self) -> core::option::Option<&caguax::route::Router>
+pub struct caguax::RouterBuilder
+impl caguax::route::RouterBuilder
+pub fn caguax::route::RouterBuilder::build(self) -> caguax::route::Router
+pub fn caguax::route::RouterBuilder::default_route(self, impl core::convert::Into<caguax::route::Route>) -> Self
+pub fn caguax::route::RouterBuilder::rule(self, caguax::route::Rule) -> Self
+pub fn caguax::route::RouterBuilder::rules(self, impl core::iter::traits::collect::IntoIterator<Item = caguax::route::Rule>) -> Self
+pub struct caguax::Rule
+impl caguax::route::Rule
+pub fn caguax::route::Rule::matcher(&self) -> &caguax::rules::Matcher
+pub fn caguax::route::Rule::name(&self) -> &str
+pub fn caguax::route::Rule::named(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::route::Rule::new(impl core::convert::Into<caguax::rules::Matcher>, impl core::convert::Into<caguax::route::Route>) -> Self
+pub fn caguax::route::Rule::parse(&str, impl core::convert::Into<caguax::route::Route>) -> caguax::error::Result<Self>
+pub fn caguax::route::Rule::route(&self) -> &caguax::route::Route
+pub struct caguax::Server
+impl caguax::server::Server
+pub fn caguax::server::Server::addresses(&self) -> &[core::net::socket_addr::SocketAddr]
+pub fn caguax::server::Server::builder(impl caguax::route::Routing + 'static) -> caguax::server::ServerBuilder
+pub fn caguax::server::Server::direct() -> caguax::server::ServerBuilder
+pub fn caguax::server::Server::interceptor(&self) -> core::option::Option<alloc::sync::Arc<caguax::intercept::Interceptor>>
+pub fn caguax::server::Server::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
+pub async fn caguax::server::Server::open_upstream(&self, &caguax::connection::Connection, &caguax::route::Route, caguax::server::OpenOptions) -> caguax::error::Result<caguax::upstream::UpstreamStream>
+pub fn caguax::server::Server::port(&self) -> u16
+pub fn caguax::server::Server::recorders(&self) -> alloc::vec::Vec<alloc::sync::Arc<dyn caguax::record::Recorder>>
+pub async fn caguax::server::Server::relay_session<C>(&self, &caguax::connection::Connection, &caguax::route::Route, C, caguax::upstream::UpstreamStream, caguax::server::RelaySession) where C: tokio::io::async_read::AsyncRead + tokio::io::async_write::AsyncWrite + core::marker::Unpin + core::marker::Send
+pub async fn caguax::server::Server::reload(&self, caguax::settings::ServerSettings, impl caguax::route::Routing + 'static) -> caguax::error::Result<()>
+pub fn caguax::server::Server::router(&self) -> alloc::sync::Arc<dyn caguax::route::Routing>
+pub async fn caguax::server::Server::serve(&self)
+pub fn caguax::server::Server::settings(&self) -> caguax::settings::ServerSettings
+pub async fn caguax::server::Server::shutdown(self)
+pub fn caguax::server::Server::start_recording(&self, &caguax::connection::Connection, &caguax::route::Route, core::option::Option<core::net::socket_addr::SocketAddr>, &caguax::upstream::UpstreamStream) -> core::option::Option<alloc::sync::Arc<caguax::record::Recording>>
+pub fn caguax::server::Server::tunnel_address(&self, &caguax::Tunnel) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub fn caguax::server::Server::tunnels(&self) -> impl core::iter::traits::iterator::Iterator<Item = (&caguax::Tunnel, core::net::socket_addr::SocketAddr)>
+impl core::fmt::Debug for caguax::server::Server
+pub fn caguax::server::Server::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::ops::drop::Drop for caguax::server::Server
+pub fn caguax::server::Server::drop(&mut self)
+pub struct caguax::ServerBuilder
+impl caguax::server::ServerBuilder
+pub fn caguax::server::ServerBuilder::allow_remote(self, bool) -> Self
+pub fn caguax::server::ServerBuilder::ca(self, coqui_sslcontext::issue::CertificateAuthority) -> caguax::error::Result<Self>
+pub fn caguax::server::ServerBuilder::egress(self, caguax::upstream::Egress) -> Self
+pub fn caguax::server::ServerBuilder::interceptor(self, caguax::intercept::Interceptor) -> Self
+pub fn caguax::server::ServerBuilder::listen(self, impl core::iter::traits::collect::IntoIterator<Item = caguax::listen::ListenAddr>) -> Self
+pub fn caguax::server::ServerBuilder::recorder(self, impl caguax::record::Recorder + 'static) -> Self
+pub fn caguax::server::ServerBuilder::settings(self, caguax::settings::ServerSettings) -> Self
+pub async fn caguax::server::ServerBuilder::start(self) -> caguax::error::Result<caguax::server::Server>
+pub fn caguax::server::ServerBuilder::tunnel(self, impl core::convert::Into<caguax::Tunnel>) -> Self
+pub fn caguax::server::ServerBuilder::tunnels<T: core::convert::Into<caguax::Tunnel>>(self, impl core::iter::traits::collect::IntoIterator<Item = T>) -> Self
+impl core::convert::From<caguax::server::ServerBuilder> for caguax::server::blocking::ServerBuilder
+pub fn caguax::server::blocking::ServerBuilder::from(caguax::server::ServerBuilder) -> Self
+impl core::fmt::Debug for caguax::server::ServerBuilder
+pub fn caguax::server::ServerBuilder::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+#[non_exhaustive] pub struct caguax::ServerSettings
+pub caguax::ServerSettings::accept_error_delay: core::time::Duration
+pub caguax::ServerSettings::allow_remote: bool
+pub caguax::ServerSettings::ca: caguax::settings::CaSettings
+pub caguax::ServerSettings::close_timeout: core::time::Duration
+pub caguax::ServerSettings::connect_timeout: core::time::Duration
+pub caguax::ServerSettings::egress: core::option::Option<caguax::upstream::Egress>
+pub caguax::ServerSettings::happy_eyeballs_delay: core::time::Duration
+pub caguax::ServerSettings::idle_timeout: core::option::Option<core::time::Duration>
+pub caguax::ServerSettings::intercept: caguax::settings::InterceptSettings
+pub caguax::ServerSettings::keep_alive: bool
+pub caguax::ServerSettings::keylog: core::option::Option<std::path::PathBuf>
+pub caguax::ServerSettings::listen: alloc::vec::Vec<caguax::listen::ListenAddr>
+pub caguax::ServerSettings::listen_backlog: u32
+pub caguax::ServerSettings::log_traffic: bool
+pub caguax::ServerSettings::max_connections: usize
+pub caguax::ServerSettings::max_head_bytes: usize
+pub caguax::ServerSettings::max_headers: usize
+pub caguax::ServerSettings::record: core::option::Option<std::path::PathBuf>
+pub caguax::ServerSettings::relay_buffer: usize
+pub caguax::ServerSettings::warn_interval: core::time::Duration
+impl caguax::settings::ServerSettings
+pub fn caguax::settings::ServerSettings::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn caguax::settings::ServerSettings::validate(&self) -> caguax::error::Result<()>
+impl core::default::Default for caguax::settings::ServerSettings
+pub fn caguax::settings::ServerSettings::default() -> Self
+pub struct caguax::Session
+impl caguax::record::Session
+pub fn caguax::record::Session::client(&self) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub fn caguax::record::Session::connection(&self) -> &caguax::connection::Connection
+pub fn caguax::record::Session::id(&self) -> u64
+pub fn caguax::record::Session::new(u64, caguax::connection::Connection, caguax::route::Route, core::option::Option<core::net::socket_addr::SocketAddr>, core::option::Option<core::net::socket_addr::SocketAddr>) -> Self
+pub fn caguax::record::Session::route(&self) -> &caguax::route::Route
+pub fn caguax::record::Session::server(&self) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub fn caguax::record::Session::started(&self) -> std::time::SystemTime
+pub struct caguax::Tunnel
+impl caguax::Tunnel
+pub fn caguax::Tunnel::builder(&str, &str) -> caguax::error::Result<caguax::TunnelBuilder>
+pub fn caguax::Tunnel::listen(&self) -> caguax::listen::ListenAddr
+pub fn caguax::Tunnel::name(&self) -> &str
+pub fn caguax::Tunnel::route(&self) -> core::option::Option<&caguax::route::Route>
+pub fn caguax::Tunnel::target(&self) -> &str
+pub fn caguax::Tunnel::target_host_port(&self) -> (alloc::string::String, u16)
+impl core::convert::From<caguax::TunnelBuilder> for caguax::Tunnel
+pub fn caguax::Tunnel::from(caguax::TunnelBuilder) -> Self
+pub struct caguax::TunnelBuilder
+impl caguax::TunnelBuilder
+pub fn caguax::TunnelBuilder::build(self) -> caguax::Tunnel
+pub fn caguax::TunnelBuilder::name(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::TunnelBuilder::route(self, impl core::convert::Into<caguax::route::Route>) -> Self
+impl core::convert::From<caguax::TunnelBuilder> for caguax::Tunnel
+pub fn caguax::Tunnel::from(caguax::TunnelBuilder) -> Self
+pub struct caguax::UpstreamError
+impl caguax::error::UpstreamError
+pub fn caguax::error::UpstreamError::attempts(&self) -> &[alloc::string::String]
+pub fn caguax::error::UpstreamError::new(impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::error::UpstreamError::unreachable(&str, alloc::vec::Vec<alloc::string::String>) -> Self
+impl core::error::Error for caguax::error::UpstreamError
+impl core::fmt::Display for caguax::error::UpstreamError
+pub fn caguax::error::UpstreamError::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub struct caguax::UpstreamStream
+impl caguax::upstream::UpstreamStream
+pub fn caguax::upstream::UpstreamStream::forward(&self) -> bool
+pub fn caguax::upstream::UpstreamStream::from_io(impl tokio::io::async_read::AsyncRead + tokio::io::async_write::AsyncWrite + core::marker::Send + core::marker::Unpin + 'static, bool) -> Self
+pub fn caguax::upstream::UpstreamStream::proxy_authorization(&self) -> core::option::Option<&str>
+pub fn caguax::upstream::UpstreamStream::server(&self) -> core::option::Option<core::net::socket_addr::SocketAddr>
+pub fn caguax::upstream::UpstreamStream::tls(&self) -> bool
+pub fn caguax::upstream::UpstreamStream::via(&self) -> core::option::Option<&str>
+impl core::fmt::Debug for caguax::upstream::UpstreamStream
+pub fn caguax::upstream::UpstreamStream::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl tokio::io::async_read::AsyncRead for caguax::upstream::UpstreamStream
+pub fn caguax::upstream::UpstreamStream::poll_read(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>, &mut tokio::io::read_buf::ReadBuf<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+impl tokio::io::async_write::AsyncWrite for caguax::upstream::UpstreamStream
+pub fn caguax::upstream::UpstreamStream::poll_flush(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+pub fn caguax::upstream::UpstreamStream::poll_shutdown(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>) -> core::task::poll::Poll<core::io::error::Result<()>>
+pub fn caguax::upstream::UpstreamStream::poll_write(core::pin::Pin<&mut Self>, &mut core::task::wake::Context<'_>, &[u8]) -> core::task::poll::Poll<core::io::error::Result<usize>>
+pub const caguax::LISTENER: &str
+pub const caguax::VERSION: &str
+pub trait caguax::Recorder: core::marker::Send + core::marker::Sync
+pub fn caguax::Recorder::closed(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::Recorder::data(&self, &caguax::record::Session, caguax::record::Sender, &[u8]) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::Recorder::ended(&self, &caguax::record::Session, caguax::record::Sender) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::Recorder::opened(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+impl caguax::record::Recorder for caguax::record::LogRecorder
+pub fn caguax::record::LogRecorder::closed(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::LogRecorder::data(&self, &caguax::record::Session, caguax::record::Sender, &[u8]) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::LogRecorder::ended(&self, &caguax::record::Session, caguax::record::Sender) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::LogRecorder::opened(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+impl caguax::record::Recorder for caguax::record::PcapRecorder
+pub fn caguax::record::PcapRecorder::closed(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::PcapRecorder::data(&self, &caguax::record::Session, caguax::record::Sender, &[u8]) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::PcapRecorder::ended(&self, &caguax::record::Session, caguax::record::Sender) -> core::result::Result<(), caguax::record::RecordError>
+pub fn caguax::record::PcapRecorder::opened(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
+pub trait caguax::Routing: core::marker::Send + core::marker::Sync
+pub fn caguax::Routing::route(&self, &caguax::connection::Connection) -> caguax::route::Route
+pub fn caguax::Routing::router(&self) -> core::option::Option<&caguax::route::Router>
+impl caguax::route::Routing for caguax::route::Router
+pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> caguax::route::Route
+pub fn caguax::route::Router::router(&self) -> core::option::Option<&caguax::route::Router>
+pub fn caguax::create_ca(&caguax::route::Router, caguax::intercept::CaOptions) -> caguax::error::Result<coqui_sslcontext::issue::CertificateAuthority>
+pub fn caguax::generate_pac(&caguax::route::Router, &str, core::option::Option<&caguax::upstream::Egress>) -> alloc::string::String
+pub fn caguax::permitted_names(&caguax::route::Router) -> core::option::Option<alloc::vec::Vec<alloc::string::String>>
+pub type caguax::Result<T, E> = core::result::Result<T, E>
+pub type caguax::UpstreamSpec = caguax::upstream::Egress
