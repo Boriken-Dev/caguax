@@ -52,7 +52,7 @@ bytes = "1"
 # TLS to destinations, and to clients of an intercepted tunnel.
 tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "tls12"] }
 rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
-coqui-proxy = { git = "https://github.com/Boriken-Dev/coqui-proxy", rev = "22ee0ee778c471cc11534b7e78be8531f8335d86", features = ["tokio", "pac", "tls"] }
+coqui-proxy = { git = "https://github.com/Boriken-Dev/coqui-proxy", rev = "089a713c5a18e1fb88df1975efd377a0779e5db9", features = ["tokio", "pac", "tls"] }
 coqui-sslcontext = { git = "https://github.com/Boriken-Dev/coqui-sslcontext", rev = "955cd9a455a288a523418daad7e846008c2bf291", features = ["system", "issue", "encrypted-keys", "pkcs12"] }
 coqui-net-acl = { git = "https://github.com/Boriken-Dev/coqui-net-acl", rev = "839435acc29b76ec0190b7099f870863313d3fcd", features = ["serde"] }
 # Configuration discovery, format selection and typed reads.
