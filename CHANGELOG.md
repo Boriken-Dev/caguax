@@ -19,3 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   document; every bound is a `ServerSettings` field with a default; live reload on `SIGHUP`.
 - Recorders: `LogRecorder` and, with `pcap`, `PcapRecorder`; a TLS key log for Wireshark.
 - `caguax run`, `check`, `pac`, `ca init`, `ca show`, `cert list`, `cert show` and `cert probe`.
+- `tools/sdk.lock` and the `deps` branch's pin in it; `packaging/container/Containerfile` builds the `caguax` image (a
+  non-root user, no published port, configuration mounted at `/etc/caguax/caguax.cfg`) and runs the tests from the `deps`
+  branch with no network, through `python3 tools/build.py container build|test`; `.env.example` lists the overrides.

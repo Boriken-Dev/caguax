@@ -179,6 +179,27 @@ RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
 Real-peer tests are opt-in: `CAGUAX_TEST_CURL=1` and `CAGUAX_TEST_SQUID=1` with
 `cargo test --all-features -- --include-ignored`.
 
+### Building without a network, and in a container
+
+The `deps` branch holds every crate `Cargo.lock` names as text, and `tools/sdk.lock` records the toolchains, `rustup` and the
+`deps` commit a build is made with. `tools/build.py` (Python 3.11, standard library only; `python3 tools/build.py --help`)
+holds them to the repository and builds from them:
+
+```text
+python3 tools/build.py sdk check                  # the lock, the Containerfile's pins and the deps commit agree
+python3 tools/build.py container build --tag caguax   # the image: sdk, build and test offline, then the runtime
+python3 tools/build.py container test             # `cargo test --all-features` offline, in the same container
+python3 tools/build.py container build --print    # the overrides and the engine command, nothing run
+```
+
+The image holds only the `caguax` command, runs as a fixed non-root user, publishes no port and reads its configuration
+from `/etc/caguax/caguax.cfg`: mount a file there read-only, set `listen = "0.0.0.0:3128"` in it, and publish the port you
+mean to with `-p`. `packaging/container/Containerfile` has the whole recipe. Where a build gets its toolchain, mirrors, base
+images or Visual Studio paths from is set in `.env` or `.env.local` (both ignored by git; `.env.example` lists every key and
+`python3 tools/build.py help env` explains them). A pin changes in `tools/sdk.lock` first; `sdk check` fails until the
+Containerfile follows. To change `Cargo.lock`, refresh the branch on a clean checkout of main with
+`python3 tools/build.py deps refresh` and push `deps` before `main`.
+
 ### Releasing
 
 No release is cut yet; the crate is consumed by git revision.
