@@ -8,9 +8,10 @@ use core::fmt;
 use core::str::FromStr;
 use std::path::PathBuf;
 
+#[cfg(any(windows, target_os = "macos", feature = "pkcs11"))]
+use coqui_sslcontext::IdentitySource as _;
 use coqui_sslcontext::{
-    ClientCertificates, Identity, IdentityQuery, IdentitySource as _, KeyPassword, Pin, Tls,
-    TlsVersion, Trust,
+    ClientCertificates, Identity, IdentityQuery, KeyPassword, Pin, Tls, TlsVersion, Trust,
 };
 use rustls::pki_types::CertificateDer;
 use rustls::pki_types::pem::PemObject as _;
