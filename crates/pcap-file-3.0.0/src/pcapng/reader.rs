@@ -1,0 +1,226 @@
+use std::io::Read;
+
+use super::blocks::block_common::{Block, RawBlock};
+use super::blocks::enhanced_packet::EnhancedPacketBlock;
+use super::blocks::interface_description::InterfaceDescriptionBlock;
+use super::blocks::section_header::SectionHeaderBlock;
+use super::{PcapNgParser, PcapNgState};
+use crate::pcapng::errors::PcapNgReadError;
+use crate::read_buffer::ReadBuffer;
+
+/// Reads a PcapNg from a reader.
+///
+/// # Example
+/// ```rust,no_run
+/// use std::fs::File;
+///
+/// use pcap_file::pcapng::PcapNgReader;
+///
+/// let file_in = File::open("test.pcapng").expect("Error opening file");
+/// let mut pcapng_reader = PcapNgReader::new(file_in).unwrap();
+///
+/// // Read test.pcapng
+/// while let Some(block) = pcapng_reader.next_block() {
+///     //Check if there is no error
+///     let (block, state) = block.unwrap();
+///
+///     //Do something
+/// }
+/// ```
+#[derive(Debug)]
+pub struct PcapNgReader<R: Read> {
+    parser: PcapNgParser,
+    reader: ReadBuffer<R>,
+}
+
+impl<R: Read> PcapNgReader<R> {
+    /// Creates a new [`PcapNgReader`] from a reader.
+    ///
+    /// Parses the first block which must be a valid SectionHeaderBlock.
+    pub fn new(reader: R) -> Result<PcapNgReader<R>, PcapNgReadError> {
+        let mut reader = ReadBuffer::new(reader);
+        let parser = reader.parse_with(PcapNgParser::new)?;
+        Ok(Self { parser, reader })
+    }
+
+    /// Creates a new [`PcapNgReader`] with a custom internal buffer capacity.
+    ///
+    /// Use this when the stream can contain blocks larger than the default
+    /// reader buffer.
+    ///
+    /// Parses the first block which must be a valid SectionHeaderBlock.
+    pub fn with_capacity(reader: R, capacity: usize) -> Result<PcapNgReader<R>, PcapNgReadError> {
+        let mut reader = ReadBuffer::with_capacity(reader, capacity);
+        let parser = reader.parse_with(PcapNgParser::new)?;
+        Ok(Self { parser, reader })
+    }
+
+    /// Returns the next [`Block`] and the current [`PcapNgState`].
+    /// [`None`] means that the reader has reached the EoF.
+    /// Won't advance the reader past any malformed packets.
+    ///
+    /// # Errors
+    /// - Only some variants of [`PcapNgReadError::Io`] are directly recoverable.
+    /// - [`PcapNgReadError::BlockConversion`] for non-state blocks can be recovered by calling [`Self::next_raw_block`].
+    ///   Malformed Section Header or Interface Description blocks may still fail there because the reader must decode them to keep its state consistent.
+    /// - Other errors will prevent the reader from advancing further.
+    #[must_use = "Not checking the result can lead to an infinite loop because the reader may not advance on error"]
+    pub fn next_block<'a>(&'a mut self) -> Option<Result<(Block<'a>, &'a PcapNgState), PcapNgReadError>> {
+        match self.reader.has_data_left() {
+            Ok(has_data) => {
+                if has_data {
+                    // # SAFETY
+                    // Block must NOT contain a mutable reference to the state.
+                    // Keep the annotations to be sure that only the lifetime is transmuted.
+                    let res: Result<Block<'_>, PcapNgReadError> =
+                        self.reader.parse_with(|src| self.parser.next_block(src));
+                    let res: Result<Block<'_>, PcapNgReadError> = unsafe { std::mem::transmute(res) };
+
+                    let state = &self.parser.state;
+
+                    Some(res.map(|blk| (blk, state)))
+                } else {
+                    None
+                }
+            }
+            Err(e) => Some(Err(PcapNgReadError::Io(e))),
+        }
+    }
+
+    /// Returns the next [`RawBlock`] and the current [`PcapNgState`].
+    /// [`None`] means that the reader has reached the EoF.
+    /// More permissive than [`Self::next_block`].
+    ///
+    /// A [`RawBlock`] can be validated using [`RawBlock::try_into_block`].
+    ///
+    /// # Errors
+    /// - Only some variants of [`PcapNgReadError::Io`] are directly recoverable.
+    /// - [`PcapNgReadError::StateUpdate`] can happen when a state-changing raw block cannot be decoded.
+    /// - All other errors will prevent the reader from advancing further.
+    #[must_use = "Not checking the result can lead to an infinite loop because the reader may not advance on error"]
+    pub fn next_raw_block<'a>(&'a mut self) -> Option<Result<(RawBlock<'a>, &'a PcapNgState), PcapNgReadError>> {
+        match self.reader.has_data_left() {
+            Ok(has_data) => {
+                if has_data {
+                    // # SAFETY
+                    // Block must NOT contain a mutable reference to the state.
+                    // Keep the annotations to be sure that only the lifetime is transmuted.
+                    let res: Result<RawBlock<'_>, PcapNgReadError> =
+                        self.reader.parse_with(|src| self.parser.next_raw_block(src));
+                    let res: Result<RawBlock<'_>, PcapNgReadError> = unsafe { std::mem::transmute(res) };
+
+                    let state = &self.parser.state;
+
+                    Some(res.map(|blk| (blk, state)))
+                } else {
+                    None
+                }
+            }
+            Err(e) => Some(Err(PcapNgReadError::Io(e))),
+        }
+    }
+
+    /// Returns the current [`SectionHeaderBlock`].
+    pub fn section(&self) -> &SectionHeaderBlock<'static> {
+        self.parser.section()
+    }
+
+    /// Returns all the current [`InterfaceDescriptionBlock`].
+    pub fn interfaces(&self) -> &[InterfaceDescriptionBlock<'static>] {
+        self.parser.interfaces()
+    }
+
+    /// Returns the [`InterfaceDescriptionBlock`] corresponding to the given packet
+    pub fn packet_interface(&self, packet: &EnhancedPacketBlock) -> Option<&InterfaceDescriptionBlock<'_>> {
+        self.interfaces().get(packet.interface_id as usize)
+    }
+
+    /// Consumes the [`Self`], returning the wrapped reader.
+    pub fn into_inner(self) -> R {
+        self.reader.into_inner()
+    }
+
+    /// Gets a reference to the wrapped reader.
+    pub fn get_ref(&self) -> &R {
+        self.reader.get_ref()
+    }
+
+    /// Returns the number of bytes parsed so far.
+    pub fn bytes_parsed(&self) -> u64 {
+        self.reader.bytes_used
+    }
+}
+
+impl<R: Read> IntoIterator for PcapNgReader<R> {
+    type Item = Result<Block<'static>, PcapNgReadError>;
+    type IntoIter = PcapNgReaderIterator<R>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        PcapNgReaderIterator {
+            reader: self,
+            err: false,
+        }
+    }
+}
+
+/// Iterator over owned [`Block`] values.
+///
+/// This is slower than [`PcapNgReader::next_block`] because each block payload
+/// is copied out of the internal read buffer.
+///
+/// Stops after the first error.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use std::fs::File;
+///
+/// use pcap_file::pcapng::PcapNgReader;
+///
+/// let file_in = File::open("test.pcapng").expect("Error opening file");
+/// let pcapng_reader = PcapNgReader::new(file_in).unwrap();
+///
+/// for block in pcapng_reader {
+///     let block = block.unwrap();
+///
+///     //Do something
+/// }
+/// ```
+#[derive(Debug)]
+pub struct PcapNgReaderIterator<R: Read> {
+    reader: PcapNgReader<R>,
+    err: bool,
+}
+
+impl<R: Read> PcapNgReaderIterator<R> {
+    /// Gets a reference to the wrapped [`PcapNgReader`].
+    pub fn get_ref(&self) -> &PcapNgReader<R> {
+        &self.reader
+    }
+
+    /// Consumes the iterator, returning the wrapped [`PcapNgReader`].
+    pub fn into_inner(self) -> PcapNgReader<R> {
+        self.reader
+    }
+}
+
+impl<R: Read> Iterator for PcapNgReaderIterator<R> {
+    type Item = Result<Block<'static>, PcapNgReadError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.err {
+            return None;
+        }
+
+        let block = self
+            .reader
+            .next_block()
+            .map(|block| block.map(|(block, _)| block.into_owned()));
+
+        if matches!(block, Some(Err(_))) {
+            self.err = true;
+        }
+
+        block
+    }
+}
