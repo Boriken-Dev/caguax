@@ -264,7 +264,8 @@ keys are errors; a duration is seconds or `"500ms"`, `"30s"`, `"2m"`, `"1h"`, `"
 | `warn_interval`, `accept_error_delay` | 10 s, 100 ms |
 
 `validate` refuses a zero timeout, count or size (those mean nothing). `non_defaults()` lists
-`allow_remote`, `auth = none`, `idle_timeout = none` and `keylog`; `Server::non_defaults()` adds a
+`allow_remote`, `auth = none`, `idle_timeout = none`, `keylog`, `record` and a `ca.key` with no
+`ca.password_env` (an unencrypted key); `Server::non_defaults()` adds a
 CA that is not name-constrained, credentials with `verify = false` and each
 `tunnels.<name>.allow_any_local = true`.
 
@@ -384,6 +385,11 @@ Ctrl-C with `0`). `--format json` output is stable.
   `<-loopback>` (`Egress::Resolver`).
 - A CA name-constrained to an IP address only was refused by curl on Windows (schannel); one
   constrained to a DNS name was accepted. rustls clients accept both.
+- The key log and the capture file are created with mode `0600` on Unix; an existing file keeps
+  its mode and a warning says when others can read it. `ca init` writes the key through a new
+  file with a random name (`create_new`, `0600`) renamed into place, never through a name another
+  account could plant, and logs `non-default setting: server.ca.key = unencrypted` when
+  `password_env` gave it no password.
 - `idle_timeout` (5 minutes by default) ends a relayed direction (tunnels, upgrades) and a forwarded exchange that is
   silent that long; it does not close an idle keep-alive client connection (`connect_timeout`
   does).

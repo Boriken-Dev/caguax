@@ -305,6 +305,12 @@ fn the_ca_is_created_constrained_shown_and_not_overwritten() {
         certificate.display().to_string()
     );
     assert!(directory.path().join("pki/ca.key").exists());
+    // The key is written with no password: the log says it is a non-default.
+    assert!(
+        text(&created.stderr).contains("non-default setting: server.ca.key = unencrypted"),
+        "{}",
+        text(&created.stderr)
+    );
     assert!(
         text(&std::fs::read(directory.path().join("pki/ca.key")).unwrap()).contains("PRIVATE KEY")
     );
@@ -338,6 +344,35 @@ fn the_ca_is_created_constrained_shown_and_not_overwritten() {
     assert_eq!(
         code(&run(&["-c", unbounded, "ca", "init", "--unconstrained"])),
         0
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn ca_init_writes_the_key_owner_only_and_never_through_a_planted_name() {
+    use std::os::unix::fs::PermissionsExt as _;
+    let directory = tempfile::tempdir().unwrap();
+    let file = directory.path().join("caguax.cfg");
+    std::fs::write(
+        &file,
+        "[server.ca]\ncertificate = \"ca.pem\"\nkey = \"ca.key\"\n[credentials.w]\nbackend = \"system\"\n[[rules]]\nmatch = \"*.corp.example\"\naction = \"tls\"\ncredential = \"w\"\n",
+    )
+    .unwrap();
+    // The names the key was once staged under: a symlink there must not be written through.
+    let target = directory.path().join("precious");
+    std::fs::write(&target, "untouched").unwrap();
+    for name in ["ca.key.new", "ca.key.tmp"] {
+        std::os::unix::fs::symlink(&target, directory.path().join(name)).unwrap();
+    }
+    let created = run(&["-c", file.to_str().unwrap(), "ca", "init"]);
+    assert_eq!(code(&created), 0, "{}", text(&created.stderr));
+    assert_eq!(std::fs::read_to_string(&target).unwrap(), "untouched");
+    let key = directory.path().join("ca.key");
+    let mode = std::fs::metadata(&key).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode, 0o600, "{mode:o}");
+    assert!(
+        text(&std::fs::read(&key).unwrap()).contains("PRIVATE KEY"),
+        "the key is in place"
     );
 }
 

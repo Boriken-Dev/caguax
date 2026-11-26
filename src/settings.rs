@@ -318,7 +318,7 @@ impl ServerSettings {
     }
 
     /// What is looser than the defaults, as `setting = value` text: listening beyond loopback, no
-    /// listener login, no idle timeout and a key log.
+    /// listener login, no idle timeout, a key log, a capture file and an unencrypted CA key.
     pub fn non_defaults(&self) -> Vec<String> {
         let mut found = Vec::new();
         if self.allow_remote {
@@ -332,6 +332,12 @@ impl ServerSettings {
         }
         if self.keylog.is_some() {
             found.push("server.keylog = (a file of TLS secrets)".into());
+        }
+        if self.record.is_some() {
+            found.push("server.record = (a capture file of relayed traffic)".into());
+        }
+        if self.ca.key.is_some() && self.ca.password_env.is_none() {
+            found.push("server.ca.key = unencrypted (no password_env)".into());
         }
         found
     }

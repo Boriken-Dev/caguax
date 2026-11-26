@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   unless it sets `allow_any_local = true`, which is listed as `non-default`.
 - `server.idle_timeout` defaults to 5 minutes, so a silent connection cannot hold a slot for ever; `0`
   disables it and is listed as `non-default`.
+- The key log and the capture file are created owner-only (`0600`) on Unix, and `ca init` writes the CA
+  key through a new randomly named `0600` file renamed into place instead of a fixed `.new` name.
+  `server.record` and a CA key with no `password_env` (also reported by `ca init`) are listed as
+  `non-default`.
 
 ### Added
 

@@ -1,6 +1,5 @@
 //! `caguax ca`: create and show the interception CA.
 
-use std::io::Write as _;
 use std::path::{Path, PathBuf};
 
 use clap::{Args, Subcommand};
@@ -8,6 +7,7 @@ use coqui_sslcontext::{KeyPassword, Secret};
 
 use super::{Cli, Failure, Loaded, Outcome, load_config, print_line, print_raw};
 use crate::config::build_router;
+use crate::fileio::write_whole;
 use crate::intercept::{CaOptions, create_ca};
 
 /// The `caguax ca` commands.
@@ -51,40 +51,6 @@ fn paths(loaded: &Loaded) -> Result<(PathBuf, PathBuf), Failure> {
     Ok((resolve(certificate), resolve(key)))
 }
 
-/// Writes `bytes` beside `path`, then renames it into place, so a file is whole or absent. A key
-/// is readable by its owner only where the platform has that.
-fn write_whole(path: &Path, bytes: &[u8], private: bool) -> std::io::Result<()> {
-    if let Some(parent) = path
-        .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-    {
-        std::fs::create_dir_all(parent)?;
-    }
-    let mut temporary = path.as_os_str().to_owned();
-    temporary.push(".new");
-    let temporary = PathBuf::from(temporary);
-    let mut options = std::fs::OpenOptions::new();
-    options.write(true).create(true).truncate(true);
-    #[cfg(unix)]
-    if private {
-        use std::os::unix::fs::OpenOptionsExt as _;
-        options.mode(0o600);
-    }
-    #[cfg(not(unix))]
-    let _ = private;
-    let written = options.open(&temporary).and_then(|mut file| {
-        file.write_all(bytes)?;
-        file.sync_all()
-    });
-    match written.and_then(|()| std::fs::rename(&temporary, path)) {
-        Ok(()) => Ok(()),
-        Err(error) => {
-            let _ = std::fs::remove_file(&temporary);
-            Err(error)
-        }
-    }
-}
-
 pub(super) fn run(cli: &Cli, command: &CaCommand) -> Outcome {
     let loaded = load_config(cli)?;
     let (certificate, key) = paths(&loaded)?;
@@ -115,9 +81,17 @@ pub(super) fn run(cli: &Cli, command: &CaCommand) -> Outcome {
                 },
                 None => KeyPassword::None,
             };
+            let encrypted = !matches!(password, KeyPassword::None);
             let key_pem = ca.private_key_pem(&password).map_err(crate::Error::from)?;
             write_whole(&key, key_pem.as_bytes(), true)?;
             write_whole(&certificate, ca.certificate_pem().as_bytes(), false)?;
+            if !encrypted {
+                tracing::warn!(
+                    target: "caguax",
+                    "non-default setting: server.ca.key = unencrypted (set server.ca.password_env \
+                     to a variable holding a password before running ca init)"
+                );
+            }
             print_line(&certificate.display().to_string())
         }
     }

@@ -3,7 +3,6 @@
 use alloc::string::String;
 use alloc::sync::Arc;
 use core::fmt;
-use std::fs::OpenOptions;
 use std::io::Write as _;
 use std::path::Path;
 use std::sync::Mutex;
@@ -15,13 +14,14 @@ pub struct FileKeyLog {
 }
 
 impl FileKeyLog {
-    /// Opens `path` for appending, creating it.
+    /// Opens `path` for appending, creating it (mode `0600` on Unix; an existing file keeps its
+    /// mode, and a warning says when others can read it).
     ///
     /// # Errors
     ///
     /// The I/O error of opening the file.
     pub fn open(path: impl AsRef<Path>) -> std::io::Result<Arc<Self>> {
-        let file = OpenOptions::new().create(true).append(true).open(path)?;
+        let file = crate::fileio::open_private(path.as_ref(), false, "TLS secrets")?;
         Ok(Arc::new(Self {
             file: Mutex::new(file),
         }))

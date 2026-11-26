@@ -91,13 +91,14 @@ impl core::fmt::Debug for PcapRecorder {
 }
 
 impl PcapRecorder {
-    /// Creates (or truncates) the capture file at `path`.
+    /// Creates (or truncates) the capture file at `path` (mode `0600` on Unix; an existing file
+    /// keeps its mode, and a warning says when others can read it).
     ///
     /// # Errors
     ///
     /// [`crate::Error::Io`] when the file cannot be written.
     pub fn create(path: impl AsRef<Path>, format: PcapFormat) -> Result<Self> {
-        let file = File::create(path)?;
+        let file = crate::fileio::open_private(path.as_ref(), true, "relayed traffic")?;
         let shared = Shared(Arc::new(Mutex::new(BufWriter::new(file))));
         let writer = match format {
             PcapFormat::Pcap => Writer::Pcap(

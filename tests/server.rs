@@ -1180,3 +1180,74 @@ async fn a_tunnel_with_a_credential_route_needs_allow_any_local() {
     );
     server.shutdown().await;
 }
+
+#[test]
+fn a_capture_file_and_an_unencrypted_ca_key_are_listed_as_non_defaults() {
+    let mut settings = test_settings();
+    assert!(settings.non_defaults().is_empty());
+    settings.record = Some("traffic.pcap".into());
+    settings.ca.certificate = Some("ca.pem".into());
+    settings.ca.key = Some("ca.key".into());
+    let listed = settings.non_defaults();
+    assert!(
+        listed
+            .iter()
+            .any(|entry| entry.starts_with("server.record")),
+        "{listed:?}"
+    );
+    assert!(
+        listed
+            .iter()
+            .any(|entry| entry.starts_with("server.ca.key = unencrypted")),
+        "{listed:?}"
+    );
+    settings.ca.password_env = Some("CA_PASSWORD".into());
+    assert!(
+        settings
+            .non_defaults()
+            .iter()
+            .all(|entry| !entry.starts_with("server.ca.key")),
+        "an encrypted key is not listed"
+    );
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn the_key_log_and_the_capture_file_are_created_readable_by_their_owner_only() {
+    use std::os::unix::fs::PermissionsExt;
+    let mode =
+        |path: &std::path::Path| std::fs::metadata(path).unwrap().permissions().mode() & 0o777;
+    let directory = tempfile::tempdir().unwrap();
+    let keylog = directory.path().join("keys.log");
+    let mut settings = test_settings();
+    settings.keylog = Some(keylog.clone());
+    #[cfg(feature = "pcap")]
+    let capture = {
+        let capture = directory.path().join("traffic.pcap");
+        settings.record = Some(capture.clone());
+        capture
+    };
+    let server = builder(Router::new())
+        .settings(settings)
+        .start()
+        .await
+        .unwrap();
+    assert_eq!(mode(&keylog), 0o600, "{:o}", mode(&keylog));
+    #[cfg(feature = "pcap")]
+    assert_eq!(mode(&capture), 0o600, "{:o}", mode(&capture));
+    server.shutdown().await;
+
+    // A file that exists keeps its mode: the server warns and does not change it.
+    let existing = directory.path().join("old.log");
+    std::fs::write(&existing, "").unwrap();
+    std::fs::set_permissions(&existing, std::fs::Permissions::from_mode(0o644)).unwrap();
+    let mut settings = test_settings();
+    settings.keylog = Some(existing.clone());
+    let server = builder(Router::new())
+        .settings(settings)
+        .start()
+        .await
+        .unwrap();
+    assert_eq!(mode(&existing), 0o644);
+    server.shutdown().await;
+}
