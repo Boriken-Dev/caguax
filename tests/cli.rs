@@ -351,6 +351,9 @@ fn the_ca_is_created_constrained_shown_and_not_overwritten() {
 #[test]
 fn ca_init_writes_the_key_owner_only_and_never_through_a_planted_name() {
     use std::os::unix::fs::PermissionsExt as _;
+    if !in_umask_022("ca_init_writes_the_key_owner_only_and_never_through_a_planted_name") {
+        return;
+    }
     let directory = tempfile::tempdir().unwrap();
     let file = directory.path().join("caguax.cfg");
     std::fs::write(

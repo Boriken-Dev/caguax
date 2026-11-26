@@ -487,3 +487,23 @@ impl tracing::Subscriber for LogCapture {
 
     fn exit(&self, _: &tracing::span::Id) {}
 }
+
+/// For a test of the mode a file is created with: runs the test again in a child process whose
+/// umask is 022, so the result does not depend on the umask this process inherited. Returns
+/// `true` in the child, which then runs the test body; the caller returns early on `false`.
+#[cfg(unix)]
+pub fn in_umask_022(test: &str) -> bool {
+    if std::env::var_os("CAGUAX_TEST_UMASK_CHILD").is_some() {
+        return true;
+    }
+    let status = std::process::Command::new("sh")
+        .arg("-c")
+        .arg("umask 022 && exec \"$0\" --exact \"$1\" --nocapture --test-threads=1")
+        .arg(std::env::current_exe().unwrap())
+        .arg(test)
+        .env("CAGUAX_TEST_UMASK_CHILD", "1")
+        .status()
+        .unwrap();
+    assert!(status.success(), "{test} failed under umask 022");
+    false
+}

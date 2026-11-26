@@ -1075,6 +1075,9 @@ async fn a_password_file_names_the_login_and_an_unreadable_one_is_a_config_error
 #[tokio::test]
 async fn the_generated_login_file_is_readable_by_its_owner_only() {
     use std::os::unix::fs::PermissionsExt;
+    if !in_umask_022("the_generated_login_file_is_readable_by_its_owner_only") {
+        return;
+    }
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("nested").join("caguax.auth");
     let auth = caguax::Auth::Generated {
@@ -1215,6 +1218,9 @@ fn a_capture_file_and_an_unencrypted_ca_key_are_listed_as_non_defaults() {
 #[tokio::test]
 async fn the_key_log_and_the_capture_file_are_created_readable_by_their_owner_only() {
     use std::os::unix::fs::PermissionsExt;
+    if !in_umask_022("the_key_log_and_the_capture_file_are_created_readable_by_their_owner_only") {
+        return;
+    }
     let mode =
         |path: &std::path::Path| std::fs::metadata(path).unwrap().permissions().mode() & 0o777;
     let directory = tempfile::tempdir().unwrap();
