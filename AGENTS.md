@@ -7,7 +7,7 @@ is self-contained. Development documentation lives with the source at
 
 MSRV Rust 1.89, edition 2024. A default build depends on `tokio`, `hyper` (HTTP/1 server and
 client), `hyper-util`, `http-body-util`, `bytes`, `rustls` and `tokio-rustls`, `coqui-proxy`,
-`coqui-sslcontext`, `coqui-net-acl`, `anycfg`, `serde`, `serde_json`, `toml`, `thiserror`,
+`coqui-sslcontext`, `coqui-net-acl`, `anycfg`, `serde`, `getrandom`, `subtle`, `base64`, `x509-cert`, `serde_json`, `toml`, `thiserror`,
 `tracing`, and with the default features `clap`, `tracing-subscriber`, `rpassword` and `regex`.
 
 | Feature | Adds | Default |
@@ -149,7 +149,7 @@ Interceptor::{with_keylog, ca, keylog, settings, server_config(host) -> Result<A
 permitted_names(&Router) -> Option<Vec<String>>
 create_ca(&Router, CaOptions) -> Result<CertificateAuthority>
 CaOptions { common_name: "caguax local CA", constrain: true, validity: 3650 days }   // non_exhaustive
-load_ca(&CaSettings) -> Result<CertificateAuthority>; is_name_constrained(&CertificateAuthority) -> bool
+load_ca(&CaSettings) -> Result<CertificateAuthority>; is_name_constrained(&CertificateAuthority) -> bool   // parsed: a NameConstraints extension with a non-empty permittedSubtrees
 ```
 
 A `CONNECT` whose route is `Tls` is intercepted: the proxy connects to the destination first (a

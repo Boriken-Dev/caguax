@@ -1335,3 +1335,37 @@ async fn the_pac_file_is_served_only_to_a_host_that_names_the_listener() {
     );
     server.shutdown().await;
 }
+
+#[test]
+fn a_ca_is_name_constrained_only_when_it_has_permitted_names_not_when_the_bytes_appear() {
+    use coqui_sslcontext::CertificateAuthority;
+    // The name-constraints OID bytes (06 03 55 1d 1e) inside the subject are no extension.
+    let lookalike = CertificateAuthority::builder("x\u{6}\u{3}U\u{1d}\u{1e}x")
+        .create()
+        .unwrap();
+    let der = lookalike.certificate_der().as_ref().to_vec();
+    assert!(
+        der.windows(5)
+            .any(|window| window == [0x06, 0x03, 0x55, 0x1d, 0x1e]),
+        "the certificate holds the five bytes"
+    );
+    let interceptor = Interceptor::new(lookalike, Default::default()).unwrap();
+    assert!(
+        interceptor
+            .non_defaults()
+            .iter()
+            .any(|entry| entry.contains("not name-constrained")),
+        "{:?}",
+        interceptor.non_defaults()
+    );
+    assert!(!caguax::intercept::is_name_constrained(interceptor.ca()));
+
+    // Positive control: a CA with permitted names is constrained.
+    let constrained = CertificateAuthority::builder("Constrained")
+        .permitted(["corp.example"])
+        .create()
+        .unwrap();
+    let interceptor = Interceptor::new(constrained, Default::default()).unwrap();
+    assert!(interceptor.non_defaults().is_empty());
+    assert!(caguax::intercept::is_name_constrained(interceptor.ca()));
+}

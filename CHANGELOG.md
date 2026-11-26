@@ -23,6 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   `non-default`.
 - `/proxy.pac` is answered only when `Host` is an IP literal, `localhost` or a name in the new
   `server.pac_hosts` (listed as `non-default` when set), else `421`.
+- A CA counts as name-constrained only when its certificate parses and carries a name-constraints
+  extension with a permitted subtree, not when the extension's bytes appear anywhere in it.
 - A reload logs every `non-default setting` it leaves in force, as the start does.
 
 ### Added

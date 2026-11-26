@@ -530,6 +530,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
+ "x509-cert",
 ]
 
 [[package]]

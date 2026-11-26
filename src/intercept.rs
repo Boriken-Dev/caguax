@@ -196,13 +196,29 @@ impl Interceptor {
     }
 }
 
-/// Whether the CA certificate carries the name-constraints extension (OID 2.5.29.30).
+/// Whether the CA certificate carries a name-constraints extension (OID 2.5.29.30) with at least
+/// one permitted subtree. A certificate that cannot be parsed, has no such extension or only
+/// excludes names is not constrained.
 pub fn is_name_constrained(ca: &CertificateAuthority) -> bool {
-    const OID: [u8; 5] = [0x06, 0x03, 0x55, 0x1d, 0x1e];
-    ca.certificate_der()
-        .as_ref()
-        .windows(OID.len())
-        .any(|window| window == OID)
+    use x509_cert::der::Decode as _;
+    use x509_cert::ext::pkix::NameConstraints;
+    let Ok(certificate) = x509_cert::Certificate::from_der(ca.certificate_der().as_ref()) else {
+        return false;
+    };
+    certificate
+        .tbs_certificate()
+        .extensions()
+        .into_iter()
+        .flatten()
+        .filter(|extension| {
+            extension.extn_id == x509_cert::der::oid::db::rfc5280::ID_CE_NAME_CONSTRAINTS
+        })
+        .filter_map(|extension| NameConstraints::from_der(extension.extn_value.as_bytes()).ok())
+        .any(|constraints| {
+            constraints
+                .permitted_subtrees
+                .is_some_and(|subtrees| !subtrees.is_empty())
+        })
 }
 
 fn names(matcher: &Matcher) -> Option<Vec<String>> {
