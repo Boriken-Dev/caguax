@@ -9,6 +9,7 @@ use super::{Inner, OpenOptions};
 use crate::connection::{Connection, Scheme};
 use crate::error::{Result, config};
 use crate::listen::ListenAddr;
+use crate::policy::CredentialUse;
 use crate::route::{Action, Route, Routing, TlsSource};
 use crate::settings::ServerSettings;
 use crate::upstream::Egress;
@@ -124,16 +125,35 @@ impl From<TunnelBuilder> for Tunnel {
     }
 }
 
-/// Whether `route` sends a credential the operator holds: a client certificate, or a login to an
-/// upstream proxy (a URL with a user, or, with `negotiate`, any proxy that may ask for one).
-fn carries_credential(route: &Route, settings: &ServerSettings) -> bool {
+/// Whether the tunnel's connection sends a credential the operator holds: a client certificate
+/// the credential rules do not withhold, or a login to an upstream proxy (a URL with a user, or,
+/// with `negotiate`, any proxy that may ask for one and no rule says `none` for every proxy).
+fn carries_credential(
+    connection: &Connection,
+    route: &Route,
+    settings: &ServerSettings,
+    router: &dyn Routing,
+) -> bool {
     if route.action() == Action::Reject {
         return false;
     }
-    if matches!(route.tls(), Some(TlsSource::Credential(_))) {
+    let credentials = router.credential_policy();
+    if matches!(route.tls(), Some(TlsSource::Credential(_)))
+        && !credentials
+            .as_ref()
+            .and_then(|policy| policy.client_certificate(connection))
+            .is_some_and(|rule| matches!(rule.using(), CredentialUse::None))
+    {
         return true;
     }
-    match route.upstream().or(settings.egress.as_ref()) {
+    let ruled = router
+        .proxy_policy()
+        .and_then(|policy| policy.decide(connection).map(|rule| rule.egress().clone()));
+    match route
+        .upstream()
+        .or(ruled.as_ref())
+        .or(settings.egress.as_ref())
+    {
         None | Some(Egress::Direct) => false,
         Some(Egress::Proxy(text)) => cfg!(feature = "negotiate") || text.contains('@'),
         Some(_) => cfg!(feature = "negotiate"),
@@ -161,7 +181,7 @@ pub(crate) fn check_credentials<'a>(
             .route()
             .cloned()
             .unwrap_or_else(|| router.route(&connection));
-        if carries_credential(&route, settings) {
+        if carries_credential(&connection, &route, settings, router) {
             return Err(config(alloc::format!(
                 "tunnel {}: its route carries a credential and a tunnel cannot ask its clients for \
                  a login, so any local process would use it; set allow_any_local = true to allow that",

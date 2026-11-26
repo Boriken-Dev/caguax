@@ -26,7 +26,9 @@ use tokio::net::TcpStream;
 use tokio_rustls::TlsConnector;
 
 use crate::connection::Connection;
+use crate::credential::ClientChoice;
 use crate::error::{Error, RejectedError, Result, UpstreamError, config};
+use crate::policy::{CredentialPolicy, CredentialRule, CredentialUse, ProxyPolicy, ProxyRule};
 use crate::route::{Action, Route as CaRoute, TlsSource};
 
 /// Where upstream answers come from.
@@ -269,7 +271,10 @@ pub struct ConnectOptions {
     keylog: Option<Arc<dyn rustls::KeyLog>>,
     happy_eyeballs_delay: Duration,
     resolvers: Resolvers,
+    credentials: Option<Arc<CredentialPolicy>>,
+    proxies: Option<Arc<ProxyPolicy>>,
     connector: Arc<tokio::sync::OnceCell<ProxyConnector>>,
+    login_connector: Arc<tokio::sync::OnceCell<ProxyConnector>>,
 }
 
 impl fmt::Debug for ConnectOptions {
@@ -295,7 +300,10 @@ impl Default for ConnectOptions {
             keylog: None,
             happy_eyeballs_delay: defaults.happy_eyeballs_delay,
             resolvers: Resolvers::default(),
+            credentials: None,
+            proxies: None,
             connector: Arc::new(tokio::sync::OnceCell::new()),
+            login_connector: Arc::new(tokio::sync::OnceCell::new()),
         }
     }
 }
@@ -311,6 +319,7 @@ impl ConnectOptions {
     pub fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = timeout;
         self.connector = Arc::new(tokio::sync::OnceCell::new());
+        self.login_connector = Arc::new(tokio::sync::OnceCell::new());
         self
     }
 
@@ -318,6 +327,7 @@ impl ConnectOptions {
     pub fn happy_eyeballs_delay(mut self, delay: Duration) -> Self {
         self.happy_eyeballs_delay = delay;
         self.connector = Arc::new(tokio::sync::OnceCell::new());
+        self.login_connector = Arc::new(tokio::sync::OnceCell::new());
         self
     }
 
@@ -326,6 +336,18 @@ impl ConnectOptions {
     /// to port 80 (default false).
     pub fn forward_http(mut self, forward: bool) -> Self {
         self.forward_http = forward;
+        self
+    }
+
+    /// Which credential goes to which host (default none: every kind takes its default).
+    pub fn credential_policy(mut self, policy: Option<Arc<CredentialPolicy>>) -> Self {
+        self.credentials = policy;
+        self
+    }
+
+    /// Which proxy serves which destination, for routes with no `upstream` of their own.
+    pub fn proxy_policy(mut self, policy: Option<Arc<ProxyPolicy>>) -> Self {
+        self.proxies = policy;
         self
     }
 
@@ -358,22 +380,34 @@ impl ConnectOptions {
         self.timeout
     }
 
-    async fn connector(&self) -> Result<&ProxyConnector> {
-        self.connector
-            .get_or_try_init(|| async {
-                let mut settings = ConnectorSettings::default();
-                settings.timeout = self.timeout;
-                settings.happy_eyeballs_delay = self.happy_eyeballs_delay;
-                let tls = coqui_sslcontext::client_config()?;
-                Ok::<_, Error>(
-                    coqui_proxy::ProxyConnector::builder()
-                        .settings(settings)
-                        .proxy_tls(tls)
+    /// The connector for a proxy: with `login`, one that answers a Negotiate or NTLM challenge
+    /// with the system's credentials (feature `negotiate`; without it there is no such login and
+    /// both connectors are the same).
+    async fn connector(&self, login: bool) -> Result<&ProxyConnector> {
+        let slot = if login {
+            &self.login_connector
+        } else {
+            &self.connector
+        };
+        slot.get_or_try_init(|| async {
+            let mut settings = ConnectorSettings::default();
+            settings.timeout = self.timeout;
+            settings.happy_eyeballs_delay = self.happy_eyeballs_delay;
+            let tls = coqui_sslcontext::client_config()?;
+            let mut builder = coqui_proxy::ProxyConnector::builder()
+                .settings(settings)
+                .proxy_tls(tls);
+            if login && cfg!(feature = "negotiate") {
+                builder = builder.negotiate(
+                    coqui_proxy::Negotiate::builder()
+                        .proxies(["*"])
                         .build()
-                        .asynch(),
-                )
-            })
-            .await
+                        .map_err(|error| config_error(&error.to_string()))?,
+                );
+            }
+            Ok::<_, Error>(builder.build().asynch())
+        })
+        .await
     }
 }
 
@@ -388,7 +422,7 @@ pub async fn resolve_upstream(
     route: &CaRoute,
     egress: Option<&Egress>,
 ) -> Result<Vec<Option<Proxy>>> {
-    resolve_with(&Resolvers::default(), connection, route, egress)
+    resolve_with(&Resolvers::default(), connection, route, egress, None)
         .await
         .map(|(answers, _)| answers)
 }
@@ -398,8 +432,12 @@ async fn resolve_with(
     connection: &Connection,
     route: &CaRoute,
     egress: Option<&Egress>,
+    proxies: Option<&ProxyPolicy>,
 ) -> Result<(Vec<Option<Proxy>>, Option<Resolver>)> {
-    let Some(source) = route.upstream().or(egress) else {
+    let ruled = proxies
+        .and_then(|policy| policy.decide(connection))
+        .map(ProxyRule::egress);
+    let Some(source) = route.upstream().or(ruled).or(egress) else {
         return Ok((alloc::vec![None], None));
     };
     let resolver = resolvers.get(source).await?;
@@ -478,7 +516,23 @@ pub async fn connect(
     let tls_config = match (route.action(), route.tls()) {
         (Action::Tls, Some(TlsSource::Config(config))) => Some(Arc::clone(config)),
         (Action::Tls, Some(TlsSource::Credential(credential))) => {
-            Some(credential.tls_config(connection.host()).await?)
+            let host = connection.host();
+            let decided = options
+                .credentials
+                .as_ref()
+                .and_then(|policy| policy.client_certificate(connection));
+            Some(match decided.map(CredentialRule::using) {
+                None | Some(CredentialUse::Default) => credential.tls_config(host).await?,
+                Some(CredentialUse::None) => {
+                    credential.tls_config_with(host, ClientChoice::None).await?
+                }
+                Some(CredentialUse::First) => {
+                    credential
+                        .tls_config_with(host, ClientChoice::First)
+                        .await?
+                }
+                Some(CredentialUse::Pin(pinned)) => pinned.tls_config(host).await?,
+            })
         }
         (Action::Tls, None) => return Err(config("a TLS route needs a client configuration")),
         _ => None,
@@ -491,12 +545,12 @@ pub async fn connect(
         }
         None => config,
     });
-    let connector = options.connector().await?;
     let (answers, resolver) = resolve_with(
         &options.resolvers,
         connection,
         route,
         options.egress.as_ref(),
+        options.proxies.as_deref(),
     )
     .await?;
     let mut failures = Vec::new();
@@ -517,7 +571,13 @@ pub async fn connect(
                 });
             }
             Some(proxy) => {
-                connector
+                let login = options
+                    .credentials
+                    .as_ref()
+                    .is_none_or(|policy| policy.proxy_login(proxy.host(), proxy.port()));
+                options
+                    .connector(login)
+                    .await?
                     .connect(
                         &Route::Proxy(proxy.clone()),
                         connection.host(),
@@ -526,7 +586,9 @@ pub async fn connect(
                     .await
             }
             None => {
-                connector
+                options
+                    .connector(false)
+                    .await?
                     .connect(&Route::Direct, connection.host(), connection.port())
                     .await
             }

@@ -36,6 +36,9 @@ use crate::auth::Auth;
 use crate::connection::Connection;
 use crate::credential::{Backend, Credential, KeystoreOptions, StoreLocation};
 use crate::error::{ConfigError, Error, Result};
+use crate::policy::{
+    CredentialKind, CredentialPolicy, CredentialRule, CredentialUse, ProxyPolicy, ProxyRule,
+};
 use crate::route::{Action, Route, Router, Rule, TlsSource};
 use crate::rules::Matcher;
 use crate::server::{Server, ServerBuilder, Tunnel};
@@ -194,6 +197,69 @@ pub struct RuleSpec {
     name: Option<String>,
 }
 
+/// What a `[[credential_rule]]` uses: `none`, `default`, `first` or `{ pin = "<credential>" }`.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+enum CredentialUseSpec {
+    Text(String),
+    Pin { pin: String },
+}
+
+/// A `[[credential_rule]]` table: which credential goes to the hosts it matches.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[non_exhaustive]
+pub struct CredentialRuleSpec {
+    /// A host pattern, or a list of them (any of), as in `[[rules]]`.
+    #[serde(rename = "match")]
+    matches: OneOrMany<String>,
+    /// `client_certificate` and `proxy_login`, one or a list (default: `client_certificate` for
+    /// `first` and `pin`, both for `none` and `default`).
+    #[serde(rename = "for", default)]
+    kinds: Option<OneOrMany<String>>,
+    /// `none`, `default`, `first`, or `{ pin = "<credential name>" }`.
+    #[serde(rename = "use")]
+    using: CredentialUseSpec,
+    #[serde(default)]
+    name: Option<String>,
+    /// Refused: a credential rule matches on the host only.
+    #[serde(default)]
+    port: Option<OneOrMany<u16>>,
+    /// Refused: a credential rule matches on the host only.
+    #[serde(default)]
+    path: Option<String>,
+}
+
+/// What a `[[proxy_rule]]` uses: `system`, `none` or `{ proxy = "<URL>" }`.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+enum ProxyUseSpec {
+    Text(String),
+    Proxy { proxy: String },
+}
+
+/// A `[[proxy_rule]]` table: which proxy serves the destinations it matches, for routes with no
+/// `upstream` of their own.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[non_exhaustive]
+pub struct ProxyRuleSpec {
+    /// A pattern, or a list of them (any of), as in `[[rules]]`.
+    #[serde(rename = "match")]
+    matches: OneOrMany<String>,
+    /// A port or a list of ports.
+    #[serde(default)]
+    port: Option<OneOrMany<u16>>,
+    /// A regular expression over the request path (forwarded HTTP only).
+    #[serde(default)]
+    path: Option<String>,
+    /// `system` (the system's proxy settings or PAC), `none` (direct), or `{ proxy = "<URL>" }`.
+    #[serde(rename = "use")]
+    using: ProxyUseSpec,
+    #[serde(default)]
+    name: Option<String>,
+}
+
 /// A `[[tunnels]]` table.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -232,6 +298,11 @@ pub struct Document {
     pub default: RouteSpec,
     /// The tunnel listeners.
     pub tunnels: Vec<TunnelSpec>,
+    /// Which credential goes to which host, first match wins.
+    pub credential_rule: Vec<CredentialRuleSpec>,
+    /// Which proxy serves which destination, first match wins; a route's own `upstream` wins over
+    /// these and these win over `server.egress`.
+    pub proxy_rule: Vec<ProxyRuleSpec>,
 }
 
 fn formats() -> core::result::Result<Formats<Value>, anycfg::Error> {
@@ -467,10 +538,13 @@ mod ini {
             let at = |message: &str| CodecError::new().line(section.line).message(message);
             let parts: Vec<&str> = section.name.split('.').collect();
             let mut values = section.values.clone();
-            if matches!(parts[0], "rules" | "tunnels") {
+            if matches!(
+                parts[0],
+                "rules" | "tunnels" | "credential_rule" | "proxy_rule"
+            ) {
                 if parts.len() != 2 || parts[1].is_empty() {
                     return Err(at(
-                        "a rules or tunnels section is [rules.<name>] or [tunnels.<name>]",
+                        "a rules, tunnels, credential_rule or proxy_rule section is [rules.<name>], [tunnels.<name>], [credential_rule.<name>] or [proxy_rule.<name>]",
                     ));
                 }
                 values
@@ -919,7 +993,24 @@ impl Builder<'_> {
     }
 
     fn matcher(&self, where_: &str, spec: &RuleSpec) -> Result<Matcher> {
-        let patterns = spec.matches.clone().into_vec();
+        self.matcher_of(
+            where_,
+            &spec.matches,
+            spec.port.as_ref(),
+            spec.path.as_deref(),
+        )
+    }
+
+    /// The matcher of `match`, `port` and `path`: one grammar for `[[rules]]`,
+    /// `[[credential_rule]]` and `[[proxy_rule]]`.
+    fn matcher_of(
+        &self,
+        where_: &str,
+        matches: &OneOrMany<String>,
+        port: Option<&OneOrMany<u16>>,
+        path: Option<&str>,
+    ) -> Result<Matcher> {
+        let patterns = matches.clone().into_vec();
         if patterns.is_empty() {
             return Err(self.fail(where_, "match must be a pattern or a list of patterns"));
         }
@@ -936,12 +1027,12 @@ impl Builder<'_> {
         } else {
             Matcher::AnyOf(parts)
         };
-        if let Some(ports) = &spec.port {
+        if let Some(ports) = port {
             matcher = matcher
                 & Matcher::port(ports.clone().into_vec())
                     .map_err(|error| self.fail(where_, error))?;
         }
-        if let Some(path) = &spec.path {
+        if let Some(path) = path {
             #[cfg(feature = "regex")]
             {
                 matcher =
@@ -974,7 +1065,109 @@ impl Builder<'_> {
             )?;
             router = router.rule(Rule::new(self.matcher(&where_, spec)?, route));
         }
+        if !self.document.credential_rule.is_empty() {
+            router = router.credential_policy(self.credential_policy(credentials)?);
+        }
+        if !self.document.proxy_rule.is_empty() {
+            router = router.proxy_policy(self.proxy_policy()?);
+        }
         Ok(router.build())
+    }
+
+    fn credential_policy(
+        &self,
+        credentials: &BTreeMap<String, Arc<Credential>>,
+    ) -> Result<CredentialPolicy> {
+        let mut policy = CredentialPolicy::new();
+        for (index, spec) in self.document.credential_rule.iter().enumerate() {
+            let where_ = alloc::format!("credential_rule[{index}]");
+            if spec.port.is_some() || spec.path.is_some() {
+                return Err(self.fail(
+                    &where_,
+                    "a credential rule matches on the host only: port and path are refused",
+                ));
+            }
+            let using = match &spec.using {
+                CredentialUseSpec::Text(text) => match text.as_str() {
+                    "none" => CredentialUse::None,
+                    "default" => CredentialUse::Default,
+                    "first" => CredentialUse::First,
+                    _ => {
+                        return Err(self.fail(
+                            &where_,
+                            "use must be \"none\", \"default\", \"first\" or { pin = \"<credential>\" }",
+                        ));
+                    }
+                },
+                CredentialUseSpec::Pin { pin } => match credentials.get(pin) {
+                    Some(credential) => CredentialUse::Pin(Arc::clone(credential)),
+                    None => {
+                        return Err(
+                            self.fail(&where_, alloc::format!("pin names no credential: {pin}"))
+                        );
+                    }
+                },
+            };
+            let matcher = self.matcher_of(&where_, &spec.matches, None, None)?;
+            let mut rule =
+                CredentialRule::new(matcher, using).map_err(|error| self.fail(&where_, error))?;
+            if let Some(kinds) = &spec.kinds {
+                let kinds = kinds
+                    .clone()
+                    .into_vec()
+                    .iter()
+                    .map(|kind| kind.parse::<CredentialKind>())
+                    .collect::<Result<Vec<_>>>()
+                    .map_err(|error| self.fail(&where_, error))?;
+                rule = rule
+                    .kinds(kinds)
+                    .map_err(|error| self.fail(&where_, error))?;
+            }
+            if let Some(name) = &spec.name {
+                rule = rule.named(name.clone());
+            }
+            policy = policy.rule(rule);
+        }
+        Ok(policy)
+    }
+
+    fn proxy_policy(&self) -> Result<ProxyPolicy> {
+        let mut policy = ProxyPolicy::new();
+        for (index, spec) in self.document.proxy_rule.iter().enumerate() {
+            let where_ = alloc::format!("proxy_rule[{index}]");
+            let egress = match &spec.using {
+                ProxyUseSpec::Text(text) => match text.as_str() {
+                    "system" => Egress::System,
+                    "none" => Egress::Direct,
+                    _ => {
+                        return Err(self.fail(
+                            &where_,
+                            "use must be \"system\", \"none\" or { proxy = \"<URL>\" }",
+                        ));
+                    }
+                },
+                ProxyUseSpec::Proxy { proxy } => {
+                    let egress = Egress::Proxy(proxy.clone());
+                    // A mistake in the URL is found here, not at the first connection.
+                    egress
+                        .resolver()
+                        .map_err(|error| self.fail(&where_, error))?;
+                    egress
+                }
+            };
+            let matcher = self.matcher_of(
+                &where_,
+                &spec.matches,
+                spec.port.as_ref(),
+                spec.path.as_deref(),
+            )?;
+            let mut rule = ProxyRule::new(matcher, egress);
+            if let Some(name) = &spec.name {
+                rule = rule.named(name.clone());
+            }
+            policy = policy.rule(rule);
+        }
+        Ok(policy)
     }
 
     fn tunnels(&self, credentials: &BTreeMap<String, Arc<Credential>>) -> Result<Vec<Tunnel>> {

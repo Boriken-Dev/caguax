@@ -96,6 +96,33 @@ upgraded to HTTPS, a `CONNECT` is intercepted (the client's TLS ends at the prox
 CA). A route's `upstream` overrides the server's egress. `Routing::router` lets the server answer
 `/proxy.pac` and report credentials; a router that is not a `Router` has no PAC form.
 
+## Credential and proxy rules (`caguax::policy`)
+
+```rust
+enum CredentialUse { None, Default, First, Pin(Arc<Credential>) }     // non_exhaustive; as_str
+enum CredentialKind { ClientCertificate, ProxyLogin }                 // non_exhaustive; as_str, FromStr
+CredentialRule::new(impl Into<Matcher>, CredentialUse) -> Result<Self>  // host-only matchers; Err otherwise
+CredentialRule::{kinds(iter) -> Result<Self>, named(..), matcher, using, covers, name}
+CredentialPolicy::{new, rule(CredentialRule), rules, client_certificate(&Connection) -> Option<&CredentialRule>,
+                   proxy_login(host, port) -> bool, non_defaults}
+ProxyRule::{new(impl Into<Matcher>, impl Into<Egress>), named, matcher, egress, name}
+ProxyPolicy::{new, rule(ProxyRule), rules, decide(&Connection) -> Option<&ProxyRule>}
+RouterBuilder::{credential_policy(CredentialPolicy), proxy_policy(ProxyPolicy)}; Router::{credential_policy, proxy_policy}
+Routing::{credential_policy(), proxy_policy()} -> Option<Arc<..>>         // default None
+ConnectOptions::{credential_policy(Option<Arc<..>>), proxy_policy(Option<Arc<..>>)}
+Credential::tls_config_with(host, ClientChoice::{Default, None, First}).await
+```
+
+Both lists are part of the `Router`, so a reload swaps them. The first rule that covers the kind and
+matches wins. A client certificate rule is matched on the destination's host (a rule matching on
+port, path, scheme or listener is `Error::Config`); with no matching rule the route's own credential
+is used as configured. A proxy login rule is matched on the upstream proxy's host; with no matching
+rule the login is `default` (feature `negotiate`: the system's Negotiate or NTLM credentials; without
+it no login is made). `First` and `Pin` apply to client certificates only. A proxy rule picks the
+egress for a destination whose route names no `upstream`; precedence is route `upstream`, proxy
+rule, `server.egress`, direct. `Server::non_defaults()` lists a rule with `use = first` as
+`credential_rule.<name or index>.use = first`. Configuration: `docs/rules.md`.
+
 ## Reaching destinations (`caguax::upstream`)
 
 ```rust
@@ -298,7 +325,7 @@ build_parts(&Document, BuildOptions) -> Result<Parts { settings, router, tunnels
 build_server(&Document, BuildOptions) -> Result<ServerBuilder>;  load_server(path) -> Result<ServerBuilder>
 BuildOptions::default().{base_dir(path), label(text)};  connection_for_target(&str, listener) -> Result<Connection>
 router_non_defaults(&Router) -> Vec<String>;  const CONFIG_VARIABLE = "CAGUAX_CONFIG"
-Document { server, credentials, rules, default, tunnels }  // serde, deny_unknown_fields
+Document { server, credentials, rules, default, tunnels, credential_rule, proxy_rule }  // serde, deny_unknown_fields
 ```
 
 The format is a `#!<format>` first line (`#!toml`, `#!yaml`, `#!json`, `#!ini`, also
@@ -317,13 +344,16 @@ included); they never quote a value (a refused key is named). Tables, in TOML:
                                  # pem: certificate, key, password_env | password_file; verify, cafile, capath, cadata, minimum_version
 [[rules]]                        # match = pattern or list (any of); port = int or list; path = regex; action, credential, upstream, name
 [default]                        # action, credential, upstream, name
+[[credential_rule]]              # match = pattern or list (host only); use = "none|default|first" | { pin = "<credential>" };
+                                 # for = "client_certificate|proxy_login" or a list; name
+[[proxy_rule]]                   # match, port, path as [[rules]]; use = "system|none" | { proxy = "<URL>" }; name
 [[tunnels]]                      # listen, target = "host:port", credential (implies action = "tls"), action, upstream, name, allow_any_local
 ```
 
 `action` defaults to `direct`; `credential` is required with `tls` and an error with `direct`;
 `upstream` is `direct`, `pac:<location>`, a proxy URL or a PAC result. Relative paths resolve
 against the file's directory (`~/` is the home directory). In INI a dotted section nests
-(`[credentials.work]`, `[server.ca]`), `[rules.<name>]` and `[tunnels.<name>]` are list entries in
+(`[credentials.work]`, `[server.ca]`), `[rules.<name>]` and `[tunnels.<name>]`, `[credential_rule.<name>]` and `[proxy_rule.<name>]` are list entries in
 file order whose `name` defaults to `<name>` (`[rules]` alone is an error), and values are typed:
 `true`/`false`/`yes`/`no`/`on`/`off`, integers, decimals, JSON lists, objects and quoted strings;
 anything else is a string. Keys are lower-cased.

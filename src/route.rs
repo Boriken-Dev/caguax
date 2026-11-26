@@ -9,6 +9,7 @@ use core::str::FromStr;
 use crate::connection::Connection;
 use crate::credential::Credential;
 use crate::error::{Error, Result, config};
+use crate::policy::{CredentialPolicy, ProxyPolicy};
 use crate::rules::Matcher;
 use crate::upstream::Egress;
 
@@ -193,6 +194,16 @@ pub trait Routing: Send + Sync {
     fn router(&self) -> Option<&Router> {
         None
     }
+
+    /// The credential rules in force (default none: every kind takes its default).
+    fn credential_policy(&self) -> Option<Arc<CredentialPolicy>> {
+        None
+    }
+
+    /// The proxy rules in force (default none).
+    fn proxy_policy(&self) -> Option<Arc<ProxyPolicy>> {
+        None
+    }
 }
 
 /// `route` applies to the connections `matcher` accepts.
@@ -259,6 +270,8 @@ pub struct Explanation<'a> {
 pub struct Router {
     rules: Vec<Rule>,
     default: Route,
+    credentials: Option<Arc<CredentialPolicy>>,
+    proxies: Option<Arc<ProxyPolicy>>,
 }
 
 impl Router {
@@ -295,6 +308,16 @@ impl Router {
         &self.default
     }
 
+    /// The credential rules, when set.
+    pub fn credential_policy(&self) -> Option<&Arc<CredentialPolicy>> {
+        self.credentials.as_ref()
+    }
+
+    /// The proxy rules, when set.
+    pub fn proxy_policy(&self) -> Option<&Arc<ProxyPolicy>> {
+        self.proxies.as_ref()
+    }
+
     /// The route for `connection`.
     pub fn route(&self, connection: &Connection) -> &Route {
         self.explain(connection).route
@@ -325,6 +348,14 @@ impl Routing for Router {
     fn router(&self) -> Option<&Router> {
         Some(self)
     }
+
+    fn credential_policy(&self) -> Option<Arc<CredentialPolicy>> {
+        self.credentials.clone()
+    }
+
+    fn proxy_policy(&self) -> Option<Arc<ProxyPolicy>> {
+        self.proxies.clone()
+    }
 }
 
 /// Builds a [`Router`].
@@ -350,6 +381,18 @@ impl RouterBuilder {
     /// The route when no rule matches (default `direct`, named `default`).
     pub fn default_route(mut self, route: impl Into<Route>) -> Self {
         self.router.default = route.into();
+        self
+    }
+
+    /// Which credential goes to which host (default none: every kind takes its default).
+    pub fn credential_policy(mut self, policy: CredentialPolicy) -> Self {
+        self.router.credentials = Some(Arc::new(policy));
+        self
+    }
+
+    /// Which proxy serves which destination, for routes with no `upstream` of their own.
+    pub fn proxy_policy(mut self, policy: ProxyPolicy) -> Self {
+        self.router.proxies = Some(Arc::new(policy));
         self
     }
 

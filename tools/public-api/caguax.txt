@@ -139,6 +139,7 @@ pub fn caguax::config::BuildOptions::base_dir(self, impl core::convert::Into<std
 pub fn caguax::config::BuildOptions::label(self, impl core::convert::Into<alloc::string::String>) -> Self
 impl core::default::Default for caguax::config::BuildOptions
 pub fn caguax::config::BuildOptions::default() -> Self
+#[non_exhaustive] pub struct caguax::config::CredentialRuleSpec
 #[non_exhaustive] pub struct caguax::config::CredentialSpec
 pub caguax::config::CredentialSpec::backend: core::option::Option<alloc::string::String>
 pub caguax::config::CredentialSpec::cadata: core::option::Option<alloc::string::String>
@@ -155,8 +156,10 @@ pub caguax::config::CredentialSpec::pin_env: core::option::Option<alloc::string:
 pub caguax::config::CredentialSpec::query: serde_json::map::Map<alloc::string::String, serde_json::value::Value>
 pub caguax::config::CredentialSpec::verify: core::option::Option<bool>
 #[non_exhaustive] pub struct caguax::config::Document
+pub caguax::config::Document::credential_rule: alloc::vec::Vec<caguax::config::CredentialRuleSpec>
 pub caguax::config::Document::credentials: alloc::collections::btree::map::BTreeMap<alloc::string::String, caguax::config::CredentialSpec>
 pub caguax::config::Document::default: caguax::config::RouteSpec
+pub caguax::config::Document::proxy_rule: alloc::vec::Vec<caguax::config::ProxyRuleSpec>
 pub caguax::config::Document::rules: alloc::vec::Vec<caguax::config::RuleSpec>
 pub caguax::config::Document::server: caguax::settings::ServerSettings
 pub caguax::config::Document::tunnels: alloc::vec::Vec<caguax::config::TunnelSpec>
@@ -168,6 +171,7 @@ pub fn caguax::config::LoadOptions::path(self, impl core::convert::Into<alloc::s
 pub caguax::config::Parts::router: caguax::route::Router
 pub caguax::config::Parts::settings: caguax::settings::ServerSettings
 pub caguax::config::Parts::tunnels: alloc::vec::Vec<caguax::Tunnel>
+#[non_exhaustive] pub struct caguax::config::ProxyRuleSpec
 #[non_exhaustive] pub struct caguax::config::RouteSpec
 pub caguax::config::RouteSpec::action: core::option::Option<alloc::string::String>
 pub caguax::config::RouteSpec::credential: core::option::Option<alloc::string::String>
@@ -230,6 +234,10 @@ pub fn caguax::credential::Backend::fmt(&self, &mut core::fmt::Formatter<'_>) ->
 impl core::str::traits::FromStr for caguax::credential::Backend
 pub type caguax::credential::Backend::Err = caguax::error::Error
 pub fn caguax::credential::Backend::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::credential::ClientChoice
+pub caguax::credential::ClientChoice::Default
+pub caguax::credential::ClientChoice::First
+pub caguax::credential::ClientChoice::None
 #[non_exhaustive] pub enum caguax::credential::StoreLocation
 pub caguax::credential::StoreLocation::Machine
 pub caguax::credential::StoreLocation::User
@@ -248,6 +256,7 @@ pub fn caguax::credential::Credential::name(&self) -> &str
 pub fn caguax::credential::Credential::options(&self) -> core::option::Option<&caguax::credential::KeystoreOptions>
 pub fn caguax::credential::Credential::query(&self) -> core::option::Option<&coqui_sslcontext::select::IdentityQuery>
 pub async fn caguax::credential::Credential::tls_config(&self, &str) -> caguax::error::Result<alloc::sync::Arc<rustls::client::client_conn::ClientConfig>>
+pub async fn caguax::credential::Credential::tls_config_with(&self, &str, caguax::credential::ClientChoice) -> caguax::error::Result<alloc::sync::Arc<rustls::client::client_conn::ClientConfig>>
 pub fn caguax::credential::Credential::verification_disabled(&self) -> bool
 impl caguax::credential::Credential
 pub fn caguax::credential::Credential::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
@@ -371,6 +380,52 @@ pub fn caguax::listen::ListenAddr::from_str(&str) -> caguax::error::Result<Self>
 pub fn caguax::listen::parse_list(&str) -> caguax::error::Result<alloc::vec::Vec<caguax::listen::ListenAddr>>
 pub mod caguax::pac
 pub fn caguax::pac::generate_pac(&caguax::route::Router, &str, core::option::Option<&caguax::upstream::Egress>) -> alloc::string::String
+pub mod caguax::policy
+#[non_exhaustive] pub enum caguax::policy::CredentialKind
+pub caguax::policy::CredentialKind::ClientCertificate
+pub caguax::policy::CredentialKind::ProxyLogin
+impl caguax::policy::CredentialKind
+pub fn caguax::policy::CredentialKind::as_str(self) -> &'static str
+impl core::str::traits::FromStr for caguax::policy::CredentialKind
+pub type caguax::policy::CredentialKind::Err = caguax::error::Error
+pub fn caguax::policy::CredentialKind::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::policy::CredentialUse
+pub caguax::policy::CredentialUse::Default
+pub caguax::policy::CredentialUse::First
+pub caguax::policy::CredentialUse::None
+pub caguax::policy::CredentialUse::Pin(alloc::sync::Arc<caguax::credential::Credential>)
+impl caguax::policy::CredentialUse
+pub fn caguax::policy::CredentialUse::as_str(&self) -> &'static str
+pub struct caguax::policy::CredentialPolicy
+impl caguax::policy::CredentialPolicy
+pub fn caguax::policy::CredentialPolicy::client_certificate(&self, &caguax::connection::Connection) -> core::option::Option<&caguax::policy::CredentialRule>
+pub fn caguax::policy::CredentialPolicy::new() -> Self
+pub fn caguax::policy::CredentialPolicy::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn caguax::policy::CredentialPolicy::proxy_login(&self, &str, u16) -> bool
+pub fn caguax::policy::CredentialPolicy::rule(self, caguax::policy::CredentialRule) -> Self
+pub fn caguax::policy::CredentialPolicy::rules(&self) -> &[caguax::policy::CredentialRule]
+pub struct caguax::policy::CredentialRule
+impl caguax::policy::CredentialRule
+pub fn caguax::policy::CredentialRule::covers(&self) -> &[caguax::policy::CredentialKind]
+pub fn caguax::policy::CredentialRule::kinds(self, impl core::iter::traits::collect::IntoIterator<Item = caguax::policy::CredentialKind>) -> caguax::error::Result<Self>
+pub fn caguax::policy::CredentialRule::matcher(&self) -> &caguax::rules::Matcher
+pub fn caguax::policy::CredentialRule::name(&self) -> &str
+pub fn caguax::policy::CredentialRule::named(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::policy::CredentialRule::new(impl core::convert::Into<caguax::rules::Matcher>, caguax::policy::CredentialUse) -> caguax::error::Result<Self>
+pub fn caguax::policy::CredentialRule::using(&self) -> &caguax::policy::CredentialUse
+pub struct caguax::policy::ProxyPolicy
+impl caguax::policy::ProxyPolicy
+pub fn caguax::policy::ProxyPolicy::decide(&self, &caguax::connection::Connection) -> core::option::Option<&caguax::policy::ProxyRule>
+pub fn caguax::policy::ProxyPolicy::new() -> Self
+pub fn caguax::policy::ProxyPolicy::rule(self, caguax::policy::ProxyRule) -> Self
+pub fn caguax::policy::ProxyPolicy::rules(&self) -> &[caguax::policy::ProxyRule]
+pub struct caguax::policy::ProxyRule
+impl caguax::policy::ProxyRule
+pub fn caguax::policy::ProxyRule::egress(&self) -> &caguax::upstream::Egress
+pub fn caguax::policy::ProxyRule::matcher(&self) -> &caguax::rules::Matcher
+pub fn caguax::policy::ProxyRule::name(&self) -> &str
+pub fn caguax::policy::ProxyRule::named(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::policy::ProxyRule::new(impl core::convert::Into<caguax::rules::Matcher>, impl core::convert::Into<caguax::upstream::Egress>) -> Self
 pub mod caguax::record
 #[non_exhaustive] pub enum caguax::record::PcapFormat
 pub caguax::record::PcapFormat::Pcap
@@ -509,20 +564,26 @@ impl caguax::route::Router
 pub fn caguax::route::Router::add(&mut self, caguax::route::Rule) -> &caguax::route::Rule
 pub fn caguax::route::Router::add_match(&mut self, impl core::convert::Into<caguax::rules::Matcher>, impl core::convert::Into<caguax::route::Route>) -> &caguax::route::Rule
 pub fn caguax::route::Router::builder() -> caguax::route::RouterBuilder
+pub fn caguax::route::Router::credential_policy(&self) -> core::option::Option<&alloc::sync::Arc<caguax::policy::CredentialPolicy>>
 pub fn caguax::route::Router::default_route(&self) -> &caguax::route::Route
 pub fn caguax::route::Router::explain(&self, &caguax::connection::Connection) -> caguax::route::Explanation<'_>
 pub fn caguax::route::Router::new() -> Self
+pub fn caguax::route::Router::proxy_policy(&self) -> core::option::Option<&alloc::sync::Arc<caguax::policy::ProxyPolicy>>
 pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> &caguax::route::Route
 pub fn caguax::route::Router::rules(&self) -> &[caguax::route::Rule]
 impl caguax::route::Router
 pub fn caguax::route::Router::pac_script(&self, &str, core::option::Option<&caguax::upstream::Egress>) -> alloc::string::String
 impl caguax::route::Routing for caguax::route::Router
+pub fn caguax::route::Router::credential_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::CredentialPolicy>>
+pub fn caguax::route::Router::proxy_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::ProxyPolicy>>
 pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> caguax::route::Route
 pub fn caguax::route::Router::router(&self) -> core::option::Option<&caguax::route::Router>
 pub struct caguax::route::RouterBuilder
 impl caguax::route::RouterBuilder
 pub fn caguax::route::RouterBuilder::build(self) -> caguax::route::Router
+pub fn caguax::route::RouterBuilder::credential_policy(self, caguax::policy::CredentialPolicy) -> Self
 pub fn caguax::route::RouterBuilder::default_route(self, impl core::convert::Into<caguax::route::Route>) -> Self
+pub fn caguax::route::RouterBuilder::proxy_policy(self, caguax::policy::ProxyPolicy) -> Self
 pub fn caguax::route::RouterBuilder::rule(self, caguax::route::Rule) -> Self
 pub fn caguax::route::RouterBuilder::rules(self, impl core::iter::traits::collect::IntoIterator<Item = caguax::route::Rule>) -> Self
 pub struct caguax::route::Rule
@@ -534,9 +595,13 @@ pub fn caguax::route::Rule::new(impl core::convert::Into<caguax::rules::Matcher>
 pub fn caguax::route::Rule::parse(&str, impl core::convert::Into<caguax::route::Route>) -> caguax::error::Result<Self>
 pub fn caguax::route::Rule::route(&self) -> &caguax::route::Route
 pub trait caguax::route::Routing: core::marker::Send + core::marker::Sync
+pub fn caguax::route::Routing::credential_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::CredentialPolicy>>
+pub fn caguax::route::Routing::proxy_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::ProxyPolicy>>
 pub fn caguax::route::Routing::route(&self, &caguax::connection::Connection) -> caguax::route::Route
 pub fn caguax::route::Routing::router(&self) -> core::option::Option<&caguax::route::Router>
 impl caguax::route::Routing for caguax::route::Router
+pub fn caguax::route::Router::credential_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::CredentialPolicy>>
+pub fn caguax::route::Router::proxy_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::ProxyPolicy>>
 pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> caguax::route::Route
 pub fn caguax::route::Router::router(&self) -> core::option::Option<&caguax::route::Router>
 pub type caguax::route::UpstreamSpec = caguax::upstream::Egress
@@ -770,11 +835,13 @@ pub fn caguax::upstream::Egress::from_str(&str) -> caguax::error::Result<Self>
 pub struct caguax::upstream::ConnectOptions
 impl caguax::upstream::ConnectOptions
 pub fn caguax::upstream::ConnectOptions::connect_timeout(&self) -> core::time::Duration
+pub fn caguax::upstream::ConnectOptions::credential_policy(self, core::option::Option<alloc::sync::Arc<caguax::policy::CredentialPolicy>>) -> Self
 pub fn caguax::upstream::ConnectOptions::egress(self, caguax::upstream::Egress) -> Self
 pub fn caguax::upstream::ConnectOptions::egress_ref(&self) -> core::option::Option<&caguax::upstream::Egress>
 pub fn caguax::upstream::ConnectOptions::forward_http(self, bool) -> Self
 pub fn caguax::upstream::ConnectOptions::happy_eyeballs_delay(self, core::time::Duration) -> Self
 pub fn caguax::upstream::ConnectOptions::keylog(self, alloc::sync::Arc<dyn rustls::key_log::KeyLog>) -> Self
+pub fn caguax::upstream::ConnectOptions::proxy_policy(self, core::option::Option<alloc::sync::Arc<caguax::policy::ProxyPolicy>>) -> Self
 pub fn caguax::upstream::ConnectOptions::timeout(self, core::time::Duration) -> Self
 pub async fn caguax::upstream::ConnectOptions::warm_up(&self) -> caguax::error::Result<()>
 impl core::default::Default for caguax::upstream::ConnectOptions
@@ -840,6 +907,21 @@ pub fn caguax::credential::Backend::fmt(&self, &mut core::fmt::Formatter<'_>) ->
 impl core::str::traits::FromStr for caguax::credential::Backend
 pub type caguax::credential::Backend::Err = caguax::error::Error
 pub fn caguax::credential::Backend::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::CredentialKind
+pub caguax::CredentialKind::ClientCertificate
+pub caguax::CredentialKind::ProxyLogin
+impl caguax::policy::CredentialKind
+pub fn caguax::policy::CredentialKind::as_str(self) -> &'static str
+impl core::str::traits::FromStr for caguax::policy::CredentialKind
+pub type caguax::policy::CredentialKind::Err = caguax::error::Error
+pub fn caguax::policy::CredentialKind::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::CredentialUse
+pub caguax::CredentialUse::Default
+pub caguax::CredentialUse::First
+pub caguax::CredentialUse::None
+pub caguax::CredentialUse::Pin(alloc::sync::Arc<caguax::credential::Credential>)
+impl caguax::policy::CredentialUse
+pub fn caguax::policy::CredentialUse::as_str(&self) -> &'static str
 #[non_exhaustive] pub enum caguax::Egress
 pub caguax::Egress::Auto
 pub caguax::Egress::Direct
@@ -968,11 +1050,13 @@ pub fn caguax::error::ConfigError::fmt(&self, &mut core::fmt::Formatter<'_>) -> 
 pub struct caguax::ConnectOptions
 impl caguax::upstream::ConnectOptions
 pub fn caguax::upstream::ConnectOptions::connect_timeout(&self) -> core::time::Duration
+pub fn caguax::upstream::ConnectOptions::credential_policy(self, core::option::Option<alloc::sync::Arc<caguax::policy::CredentialPolicy>>) -> Self
 pub fn caguax::upstream::ConnectOptions::egress(self, caguax::upstream::Egress) -> Self
 pub fn caguax::upstream::ConnectOptions::egress_ref(&self) -> core::option::Option<&caguax::upstream::Egress>
 pub fn caguax::upstream::ConnectOptions::forward_http(self, bool) -> Self
 pub fn caguax::upstream::ConnectOptions::happy_eyeballs_delay(self, core::time::Duration) -> Self
 pub fn caguax::upstream::ConnectOptions::keylog(self, alloc::sync::Arc<dyn rustls::key_log::KeyLog>) -> Self
+pub fn caguax::upstream::ConnectOptions::proxy_policy(self, core::option::Option<alloc::sync::Arc<caguax::policy::ProxyPolicy>>) -> Self
 pub fn caguax::upstream::ConnectOptions::timeout(self, core::time::Duration) -> Self
 pub async fn caguax::upstream::ConnectOptions::warm_up(&self) -> caguax::error::Result<()>
 impl core::default::Default for caguax::upstream::ConnectOptions
@@ -1010,6 +1094,7 @@ pub fn caguax::credential::Credential::name(&self) -> &str
 pub fn caguax::credential::Credential::options(&self) -> core::option::Option<&caguax::credential::KeystoreOptions>
 pub fn caguax::credential::Credential::query(&self) -> core::option::Option<&coqui_sslcontext::select::IdentityQuery>
 pub async fn caguax::credential::Credential::tls_config(&self, &str) -> caguax::error::Result<alloc::sync::Arc<rustls::client::client_conn::ClientConfig>>
+pub async fn caguax::credential::Credential::tls_config_with(&self, &str, caguax::credential::ClientChoice) -> caguax::error::Result<alloc::sync::Arc<rustls::client::client_conn::ClientConfig>>
 pub fn caguax::credential::Credential::verification_disabled(&self) -> bool
 impl caguax::credential::Credential
 pub fn caguax::credential::Credential::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
@@ -1031,6 +1116,23 @@ pub fn caguax::credential::CredentialBuilder::query(self, coqui_sslcontext::sele
 pub fn caguax::credential::CredentialBuilder::verify(self, bool) -> Self
 impl core::convert::From<caguax::credential::CredentialBuilder> for caguax::route::TlsSource
 pub fn caguax::route::TlsSource::from(caguax::credential::CredentialBuilder) -> Self
+pub struct caguax::CredentialPolicy
+impl caguax::policy::CredentialPolicy
+pub fn caguax::policy::CredentialPolicy::client_certificate(&self, &caguax::connection::Connection) -> core::option::Option<&caguax::policy::CredentialRule>
+pub fn caguax::policy::CredentialPolicy::new() -> Self
+pub fn caguax::policy::CredentialPolicy::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
+pub fn caguax::policy::CredentialPolicy::proxy_login(&self, &str, u16) -> bool
+pub fn caguax::policy::CredentialPolicy::rule(self, caguax::policy::CredentialRule) -> Self
+pub fn caguax::policy::CredentialPolicy::rules(&self) -> &[caguax::policy::CredentialRule]
+pub struct caguax::CredentialRule
+impl caguax::policy::CredentialRule
+pub fn caguax::policy::CredentialRule::covers(&self) -> &[caguax::policy::CredentialKind]
+pub fn caguax::policy::CredentialRule::kinds(self, impl core::iter::traits::collect::IntoIterator<Item = caguax::policy::CredentialKind>) -> caguax::error::Result<Self>
+pub fn caguax::policy::CredentialRule::matcher(&self) -> &caguax::rules::Matcher
+pub fn caguax::policy::CredentialRule::name(&self) -> &str
+pub fn caguax::policy::CredentialRule::named(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::policy::CredentialRule::new(impl core::convert::Into<caguax::rules::Matcher>, caguax::policy::CredentialUse) -> caguax::error::Result<Self>
+pub fn caguax::policy::CredentialRule::using(&self) -> &caguax::policy::CredentialUse
 pub struct caguax::CredentialUnavailableError
 impl caguax::error::CredentialUnavailableError
 pub fn caguax::error::CredentialUnavailableError::credential(&self) -> &str
@@ -1103,6 +1205,19 @@ impl core::fmt::Debug for caguax::auth::Login
 pub fn caguax::auth::Login::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 #[non_exhaustive] pub struct caguax::OpenOptions
 pub caguax::OpenOptions::forward_http: bool
+pub struct caguax::ProxyPolicy
+impl caguax::policy::ProxyPolicy
+pub fn caguax::policy::ProxyPolicy::decide(&self, &caguax::connection::Connection) -> core::option::Option<&caguax::policy::ProxyRule>
+pub fn caguax::policy::ProxyPolicy::new() -> Self
+pub fn caguax::policy::ProxyPolicy::rule(self, caguax::policy::ProxyRule) -> Self
+pub fn caguax::policy::ProxyPolicy::rules(&self) -> &[caguax::policy::ProxyRule]
+pub struct caguax::ProxyRule
+impl caguax::policy::ProxyRule
+pub fn caguax::policy::ProxyRule::egress(&self) -> &caguax::upstream::Egress
+pub fn caguax::policy::ProxyRule::matcher(&self) -> &caguax::rules::Matcher
+pub fn caguax::policy::ProxyRule::name(&self) -> &str
+pub fn caguax::policy::ProxyRule::named(self, impl core::convert::Into<alloc::string::String>) -> Self
+pub fn caguax::policy::ProxyRule::new(impl core::convert::Into<caguax::rules::Matcher>, impl core::convert::Into<caguax::upstream::Egress>) -> Self
 pub struct caguax::RejectedError
 impl caguax::error::RejectedError
 pub fn caguax::error::RejectedError::new(impl core::convert::Into<alloc::string::String>) -> Self
@@ -1138,20 +1253,26 @@ impl caguax::route::Router
 pub fn caguax::route::Router::add(&mut self, caguax::route::Rule) -> &caguax::route::Rule
 pub fn caguax::route::Router::add_match(&mut self, impl core::convert::Into<caguax::rules::Matcher>, impl core::convert::Into<caguax::route::Route>) -> &caguax::route::Rule
 pub fn caguax::route::Router::builder() -> caguax::route::RouterBuilder
+pub fn caguax::route::Router::credential_policy(&self) -> core::option::Option<&alloc::sync::Arc<caguax::policy::CredentialPolicy>>
 pub fn caguax::route::Router::default_route(&self) -> &caguax::route::Route
 pub fn caguax::route::Router::explain(&self, &caguax::connection::Connection) -> caguax::route::Explanation<'_>
 pub fn caguax::route::Router::new() -> Self
+pub fn caguax::route::Router::proxy_policy(&self) -> core::option::Option<&alloc::sync::Arc<caguax::policy::ProxyPolicy>>
 pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> &caguax::route::Route
 pub fn caguax::route::Router::rules(&self) -> &[caguax::route::Rule]
 impl caguax::route::Router
 pub fn caguax::route::Router::pac_script(&self, &str, core::option::Option<&caguax::upstream::Egress>) -> alloc::string::String
 impl caguax::route::Routing for caguax::route::Router
+pub fn caguax::route::Router::credential_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::CredentialPolicy>>
+pub fn caguax::route::Router::proxy_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::ProxyPolicy>>
 pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> caguax::route::Route
 pub fn caguax::route::Router::router(&self) -> core::option::Option<&caguax::route::Router>
 pub struct caguax::RouterBuilder
 impl caguax::route::RouterBuilder
 pub fn caguax::route::RouterBuilder::build(self) -> caguax::route::Router
+pub fn caguax::route::RouterBuilder::credential_policy(self, caguax::policy::CredentialPolicy) -> Self
 pub fn caguax::route::RouterBuilder::default_route(self, impl core::convert::Into<caguax::route::Route>) -> Self
+pub fn caguax::route::RouterBuilder::proxy_policy(self, caguax::policy::ProxyPolicy) -> Self
 pub fn caguax::route::RouterBuilder::rule(self, caguax::route::Rule) -> Self
 pub fn caguax::route::RouterBuilder::rules(self, impl core::iter::traits::collect::IntoIterator<Item = caguax::route::Rule>) -> Self
 pub struct caguax::Rule
@@ -1303,9 +1424,13 @@ pub fn caguax::record::PcapRecorder::data(&self, &caguax::record::Session, cagua
 pub fn caguax::record::PcapRecorder::ended(&self, &caguax::record::Session, caguax::record::Sender) -> core::result::Result<(), caguax::record::RecordError>
 pub fn caguax::record::PcapRecorder::opened(&self, &caguax::record::Session) -> core::result::Result<(), caguax::record::RecordError>
 pub trait caguax::Routing: core::marker::Send + core::marker::Sync
+pub fn caguax::Routing::credential_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::CredentialPolicy>>
+pub fn caguax::Routing::proxy_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::ProxyPolicy>>
 pub fn caguax::Routing::route(&self, &caguax::connection::Connection) -> caguax::route::Route
 pub fn caguax::Routing::router(&self) -> core::option::Option<&caguax::route::Router>
 impl caguax::route::Routing for caguax::route::Router
+pub fn caguax::route::Router::credential_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::CredentialPolicy>>
+pub fn caguax::route::Router::proxy_policy(&self) -> core::option::Option<alloc::sync::Arc<caguax::policy::ProxyPolicy>>
 pub fn caguax::route::Router::route(&self, &caguax::connection::Connection) -> caguax::route::Route
 pub fn caguax::route::Router::router(&self) -> core::option::Option<&caguax::route::Router>
 pub fn caguax::create_ca(&caguax::route::Router, caguax::intercept::CaOptions) -> caguax::error::Result<coqui_sslcontext::issue::CertificateAuthority>

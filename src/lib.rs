@@ -24,6 +24,7 @@ pub mod intercept;
 pub mod keylog;
 pub mod listen;
 pub mod pac;
+pub mod policy;
 pub mod record;
 pub mod route;
 pub mod rules;
@@ -40,6 +41,9 @@ pub use error::{
 pub use intercept::{CaOptions, Interceptor, create_ca, permitted_names};
 pub use listen::ListenAddr;
 pub use pac::generate_pac;
+pub use policy::{
+    CredentialKind, CredentialPolicy, CredentialRule, CredentialUse, ProxyPolicy, ProxyRule,
+};
 pub use record::{Recorder, Session};
 pub use route::{
     Action, Explanation, Route, RouteBuilder, Router, RouterBuilder, Routing, Rule, TlsSource,

@@ -170,6 +170,10 @@ upstream proxy) is refused when the configuration is loaded unless it says `allo
 true`, which `caguax run` lists as `non-default tunnels.<name>.allow_any_local = true`. Both
 `auth = "none"` and `idle_timeout = 0` are listed the same way (`non-default server.auth = none`).
 
+Which credential goes to which host (`[[credential_rule]]`) and which proxy serves which
+destination (`[[proxy_rule]]`) are decided by host patterns, with examples covering many hosts, in
+[`docs/rules.md`](https://github.com/Boriken-Dev/caguax/blob/main/docs/rules.md).
+
 The settings, with their defaults, are listed in the
 [API header](https://github.com/Boriken-Dev/caguax/blob/main/AGENTS.md).
 

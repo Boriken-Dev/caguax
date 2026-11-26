@@ -29,6 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `[[credential_rule]]` and `[[proxy_rule]]` (`caguax::policy`): which credential goes to which host
+  (`none`, `default`, `first` or a `pin` to a named credential; client certificates and the upstream
+  proxy login) and which proxy serves which destination (`system`, `none` or a proxy URL), by the same
+  host patterns as `[[rules]]`, first match wins; a route's own `upstream` still wins over a proxy
+  rule. A rule with `use = "first"` is listed as `non-default`. See `docs/rules.md`.
+- A tunnel whose client certificate a `none` credential rule withholds needs no `allow_any_local`.
+
 - `[server.keys]` (`max_pbkdf2_iterations`, `max_scrypt_memory`, `KeyLimits`) and `CredentialBuilder::key_settings`:
   the key derivation bounds for the CA key and `pem` credential keys, as `coqui-sslcontext` takes them;
   a raised bound is listed as `non-default`.

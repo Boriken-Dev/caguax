@@ -11,8 +11,8 @@ use std::path::PathBuf;
 #[cfg(any(windows, target_os = "macos", feature = "pkcs11"))]
 use coqui_sslcontext::IdentitySource as _;
 use coqui_sslcontext::{
-    ClientCertificates, Identity, IdentityQuery, KeyPassword, KeySettings, Pin, Tls, TlsVersion,
-    Trust,
+    CertificateChoice, ClientCertificates, Identity, IdentityQuery, KeyPassword, KeySettings, Pin,
+    Tls, TlsVersion, Trust,
 };
 use rustls::pki_types::CertificateDer;
 use rustls::pki_types::pem::PemObject as _;
@@ -149,7 +149,31 @@ pub struct Credential {
     name: String,
     source: Source,
     verification: Verification,
-    built: tokio::sync::Mutex<Option<Arc<Tls>>>,
+    built: tokio::sync::Mutex<[Option<Arc<Tls>>; 3]>,
+}
+
+/// What a client certificate rule leaves of a [`Credential`] for one destination.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[non_exhaustive]
+pub enum ClientChoice {
+    /// The credential as configured: its identity, or the selector's own choice for a keystore
+    /// query.
+    #[default]
+    Default,
+    /// No certificate: the credential's trust settings only.
+    None,
+    /// The first candidate a keystore query finds (an identity credential has just the one).
+    First,
+}
+
+impl ClientChoice {
+    fn slot(self) -> usize {
+        match self {
+            Self::Default => 0,
+            Self::None => 1,
+            Self::First => 2,
+        }
+    }
 }
 
 impl fmt::Debug for Credential {
@@ -238,7 +262,7 @@ impl Credential {
     /// Forgets the built configuration; the next use looks the identity up again (a renewed
     /// certificate).
     pub async fn invalidate(&self) {
-        *self.built.lock().await = None;
+        *self.built.lock().await = [None, None, None];
     }
 
     /// The client configuration for a connection to `host`, built on first call.
@@ -247,21 +271,37 @@ impl Credential {
     ///
     /// [`crate::Error::CredentialUnavailable`] when the identity cannot be found or loaded.
     pub async fn tls_config(&self, host: &str) -> Result<Arc<rustls::ClientConfig>> {
+        self.tls_config_with(host, ClientChoice::Default).await
+    }
+
+    /// [`tls_config`](Self::tls_config) with what a rule decided for this destination: no
+    /// certificate at all builds no identity (a keystore is not touched, no PIN is asked).
+    ///
+    /// # Errors
+    ///
+    /// As [`tls_config`](Self::tls_config).
+    pub async fn tls_config_with(
+        &self,
+        host: &str,
+        choice: ClientChoice,
+    ) -> Result<Arc<rustls::ClientConfig>> {
         let tls = {
             let mut built = self.built.lock().await;
-            if let Some(tls) = built.as_ref() {
+            if let Some(tls) = built[choice.slot()].as_ref() {
                 Arc::clone(tls)
             } else {
                 let source = self.source.clone();
                 let verification = self.verification.clone();
                 let name = self.name.clone();
-                let tls = tokio::task::spawn_blocking(move || build(&source, &verification, &name))
-                    .await
-                    .map_err(|_| {
-                        CredentialUnavailableError::new(&self.name, "the keystore thread ended")
-                    })??;
+                let tls = tokio::task::spawn_blocking(move || {
+                    build(&source, &verification, &name, choice)
+                })
+                .await
+                .map_err(|_| {
+                    CredentialUnavailableError::new(&self.name, "the keystore thread ended")
+                })??;
                 let tls = Arc::new(tls);
-                *built = Some(Arc::clone(&tls));
+                built[choice.slot()] = Some(Arc::clone(&tls));
                 tls
             }
         };
@@ -368,7 +408,7 @@ impl CredentialBuilder {
             name: self.name,
             source: self.source,
             verification: self.verification,
-            built: tokio::sync::Mutex::new(None),
+            built: tokio::sync::Mutex::new([None, None, None]),
         }
     }
 }
@@ -525,7 +565,12 @@ fn keystore_identity(
     }
 }
 
-fn build(source: &Source, verification: &Verification, name: &str) -> Result<Tls> {
+fn build(
+    source: &Source,
+    verification: &Verification,
+    name: &str,
+    choice: ClientChoice,
+) -> Result<Tls> {
     let mut builder = Tls::builder();
     let trust = if verification.verify == Some(false) {
         Trust::Disabled
@@ -546,6 +591,15 @@ fn build(source: &Source, verification: &Verification, name: &str) -> Result<Tls
     builder = builder.trust(trust);
     if let Some(version) = verification.minimum_version {
         builder = builder.minimum_version(version);
+    }
+    if choice == ClientChoice::None {
+        return builder
+            .client_certificates(ClientCertificates::None)
+            .build()
+            .map_err(|error| unavailable(name, error));
+    }
+    if choice == ClientChoice::First {
+        builder = builder.certificate_policy(Arc::new(|_| CertificateChoice::First));
     }
     let certificates = match source {
         Source::Identity(identity) => ClientCertificates::Identity(identity.clone()),

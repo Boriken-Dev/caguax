@@ -410,7 +410,9 @@ async fn build_state(
     };
     let mut connect = ConnectOptions::default()
         .timeout(settings.connect_timeout)
-        .happy_eyeballs_delay(settings.happy_eyeballs_delay);
+        .happy_eyeballs_delay(settings.happy_eyeballs_delay)
+        .credential_policy(router.credential_policy())
+        .proxy_policy(router.proxy_policy());
     if let Some(egress) = &settings.egress {
         connect = connect.egress(egress.clone());
     }
@@ -644,6 +646,9 @@ impl Server {
         }
         if let Some(router) = state.router.router() {
             found.extend(crate::config::router_non_defaults(router));
+        }
+        if let Some(policy) = state.router.credential_policy() {
+            found.extend(policy.non_defaults());
         }
         for (tunnel, _) in &self.inner.tunnels {
             if tunnel.allow_any_local() {
