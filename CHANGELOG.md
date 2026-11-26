@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   key through a new randomly named `0600` file renamed into place instead of a fixed `.new` name.
   `server.record` and a CA key with no `password_env` (also reported by `ca init`) are listed as
   `non-default`.
+- A reload logs every `non-default setting` it leaves in force, as the start does.
 
 ### Added
 

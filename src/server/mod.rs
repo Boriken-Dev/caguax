@@ -716,7 +716,8 @@ impl Server {
 
     /// Replaces the settings and the router in force, building the new state beside the old: a
     /// state that fails to build leaves the running one. Listeners, their number and addresses and
-    /// the tunnels are not changed; a different `listen` is refused.
+    /// the tunnels are not changed; a different `listen` is refused. After a swap every
+    /// `non_defaults()` entry is logged as `non-default setting: ...`, as the command does at start.
     ///
     /// # Errors
     ///
@@ -743,6 +744,9 @@ impl Server {
             .state
             .write()
             .unwrap_or_else(std::sync::PoisonError::into_inner) = Arc::new(state);
+        for entry in self.non_defaults() {
+            tracing::info!(target: "caguax", "non-default setting: {entry}");
+        }
         Ok(())
     }
 

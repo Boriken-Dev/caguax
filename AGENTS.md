@@ -234,7 +234,8 @@ unless `allow_remote`. `shutdown` stops listening, cancels every connection and 
 dropping a `Server` stops its tasks without waiting. `reload` builds the new state (egress,
 credentials, interceptor, recorders, timeouts) beside the old and swaps; listener addresses and
 tunnels do not change, a different `listen` is `Error::Config`, and a state that fails to build
-leaves the running one. `blocking::*` must not be called from inside an async task.
+leaves the running one; after the swap every `non_defaults()` entry is logged as
+`non-default setting: ...`, so a reload that loosens something leaves a trace. `blocking::*` must not be called from inside an async task.
 
 ## Settings (`caguax::settings`)
 

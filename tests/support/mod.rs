@@ -435,3 +435,55 @@ pub async fn logged_origin() -> LoggedOrigin {
         connections,
     }
 }
+
+/// Collects the messages of the `tracing` events emitted on this thread while it is set.
+#[derive(Clone, Default)]
+pub struct LogCapture(Arc<Mutex<Vec<String>>>);
+
+impl LogCapture {
+    /// Starts capturing on the current thread until the guard drops.
+    pub fn start() -> (Self, tracing::subscriber::DefaultGuard) {
+        let capture = Self::default();
+        let guard = tracing::subscriber::set_default(capture.clone());
+        (capture, guard)
+    }
+
+    pub fn messages(&self) -> Vec<String> {
+        self.0.lock().unwrap().clone()
+    }
+}
+
+struct Message<'a>(&'a mut String);
+
+impl tracing::field::Visit for Message<'_> {
+    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
+        if field.name() == "message" {
+            use std::fmt::Write as _;
+            let _ = write!(self.0, "{value:?}");
+        }
+    }
+}
+
+impl tracing::Subscriber for LogCapture {
+    fn enabled(&self, _: &tracing::Metadata<'_>) -> bool {
+        true
+    }
+
+    fn new_span(&self, _: &tracing::span::Attributes<'_>) -> tracing::span::Id {
+        tracing::span::Id::from_u64(1)
+    }
+
+    fn record(&self, _: &tracing::span::Id, _: &tracing::span::Record<'_>) {}
+
+    fn record_follows_from(&self, _: &tracing::span::Id, _: &tracing::span::Id) {}
+
+    fn event(&self, event: &tracing::Event<'_>) {
+        let mut message = String::new();
+        event.record(&mut Message(&mut message));
+        self.0.lock().unwrap().push(message);
+    }
+
+    fn enter(&self, _: &tracing::span::Id) {}
+
+    fn exit(&self, _: &tracing::span::Id) {}
+}

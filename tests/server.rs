@@ -1251,3 +1251,39 @@ async fn the_key_log_and_the_capture_file_are_created_readable_by_their_owner_on
     assert_eq!(mode(&existing), 0o644);
     server.shutdown().await;
 }
+
+#[tokio::test]
+async fn a_reload_logs_every_non_default_it_loosened() {
+    let directory = tempfile::tempdir().unwrap();
+    let server = builder(Router::new()).start().await.unwrap();
+    assert!(server.non_defaults().is_empty());
+
+    let mut loosened = test_settings();
+    loosened.keylog = Some(directory.path().join("keys.log"));
+    loosened.auth = caguax::Auth::None;
+    let (logs, guard) = LogCapture::start();
+    server.reload(loosened, Router::new()).await.unwrap();
+    drop(guard);
+    let messages = logs.messages();
+    for expected in [
+        "non-default setting: server.keylog = (a file of TLS secrets)",
+        "non-default setting: server.auth = none",
+    ] {
+        assert!(messages.iter().any(|line| line == expected), "{messages:?}");
+    }
+
+    // A reload that fails changes nothing and logs no non-default.
+    let mut broken = test_settings();
+    broken.max_headers = 0;
+    let (logs, guard) = LogCapture::start();
+    assert!(server.reload(broken, Router::new()).await.is_err());
+    drop(guard);
+    assert!(
+        logs.messages()
+            .iter()
+            .all(|line| !line.starts_with("non-default")),
+        "{:?}",
+        logs.messages()
+    );
+    server.shutdown().await;
+}
