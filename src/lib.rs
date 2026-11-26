@@ -48,7 +48,7 @@ pub use route::{
 pub use rules::{CustomMatcher, Matcher, PortSpec};
 pub use server::blocking;
 pub use server::{OpenOptions, RelaySession, Server, ServerBuilder, Tunnel, TunnelBuilder};
-pub use settings::{CaSettings, InterceptSettings, ServerSettings};
+pub use settings::{CaSettings, InterceptSettings, KeyLimits, ServerSettings};
 pub use upstream::{ConnectOptions, Egress, UpstreamStream};
 
 /// This crate's version.

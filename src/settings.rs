@@ -12,6 +12,8 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use serde::de::{self, Deserializer};
 
+use coqui_sslcontext::KeySettings;
+
 use crate::auth::Auth;
 use crate::error::{Result, config};
 use crate::listen::ListenAddr;
@@ -148,6 +150,37 @@ impl Default for CaSettings {
     }
 }
 
+/// How much key derivation work an encrypted private key may ask for before it is refused
+/// (`[server.keys]`), for the CA key and the keys of `pem` credentials.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+#[non_exhaustive]
+pub struct KeyLimits {
+    /// The most PBKDF2 iterations (default 10 000 000).
+    pub max_pbkdf2_iterations: u32,
+    /// The most scrypt memory in bytes, `128 * r * (N + p)` (default 1 GiB).
+    pub max_scrypt_memory: u64,
+}
+
+impl Default for KeyLimits {
+    fn default() -> Self {
+        Self {
+            max_pbkdf2_iterations: KeySettings::DEFAULT_MAX_PBKDF2_ITERATIONS,
+            max_scrypt_memory: KeySettings::DEFAULT_MAX_SCRYPT_MEMORY,
+        }
+    }
+}
+
+impl KeyLimits {
+    /// The limits as `coqui-sslcontext` takes them.
+    pub fn key_settings(&self) -> KeySettings {
+        let mut settings = KeySettings::default();
+        settings.max_pbkdf2_iterations = self.max_pbkdf2_iterations;
+        settings.max_scrypt_memory = self.max_scrypt_memory;
+        settings
+    }
+}
+
 /// How intercepted tunnels get their certificates (`[server.intercept]`).
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -221,6 +254,8 @@ pub struct ServerSettings {
     /// (default none). A request naming another host is `421`, so a page that rebinds its own name
     /// to the proxy's port cannot read the rules; listed by [`non_defaults`](Self::non_defaults).
     pub pac_hosts: Vec<String>,
+    /// The key derivation bounds for encrypted private keys.
+    pub keys: KeyLimits,
     /// The interception certificate authority.
     pub ca: CaSettings,
     /// How intercepted tunnels get their certificates.
@@ -260,6 +295,7 @@ impl Default for ServerSettings {
             log_traffic: false,
             keylog: None,
             pac_hosts: Vec::new(),
+            keys: KeyLimits::default(),
             ca: CaSettings::default(),
             intercept: InterceptSettings::default(),
             relay_buffer: 64 * 1024,
@@ -342,6 +378,13 @@ impl ServerSettings {
             found.push(alloc::format!(
                 "server.pac_hosts = {}",
                 self.pac_hosts.join(", ")
+            ));
+        }
+        for entry in self.keys.key_settings().non_defaults() {
+            found.push(alloc::format!(
+                "server.keys.{} = {}",
+                entry.setting,
+                entry.value
             ));
         }
         if self.record.is_some() {

@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `[server.keys]` (`max_pbkdf2_iterations`, `max_scrypt_memory`, `KeyLimits`) and `CredentialBuilder::key_settings`:
+  the key derivation bounds for the CA key and `pem` credential keys, as `coqui-sslcontext` takes them;
+  a raised bound is listed as `non-default`.
+
 - The `caguax` library and command: a local proxy server in which rules decide, per request,
   whether it goes direct, through the system's proxy, a proxy URL, a PAC file or the proxy
   variables, with the proxy owning the TLS (client certificates from keystores or PEM and

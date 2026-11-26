@@ -17,7 +17,7 @@ use core::time::Duration;
 use std::sync::Mutex;
 
 use coqui_sslcontext::{
-    CertificateAuthority, IssueSettings, KeyLogging, KeyPassword, Secret, ServerTls,
+    CertificateAuthority, IssueSettings, KeyLogging, KeyPassword, KeySettings, Secret, ServerTls,
 };
 use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_rustls::TlsAcceptor;
@@ -299,7 +299,7 @@ fn env_password(name: &str) -> KeyPassword {
 ///
 /// [`crate::Error::Config`] when a path is missing or unreadable; [`crate::Error::Tls`] when the files are not a
 /// CA certificate and its key or the password is wrong.
-pub fn load_ca(settings: &CaSettings) -> Result<CertificateAuthority> {
+pub fn load_ca(settings: &CaSettings, keys: &KeySettings) -> Result<CertificateAuthority> {
     let (Some(certificate), Some(key)) = (&settings.certificate, &settings.key) else {
         return Err(config("server.ca: certificate and key are both needed"));
     };
@@ -317,10 +317,11 @@ pub fn load_ca(settings: &CaSettings) -> Result<CertificateAuthority> {
         .password_env
         .as_deref()
         .map_or(KeyPassword::None, env_password);
-    Ok(CertificateAuthority::from_pem(
+    Ok(CertificateAuthority::from_pem_with_settings(
         &certificate,
         &key,
         &password,
+        keys,
     )?)
 }
 

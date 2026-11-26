@@ -725,6 +725,7 @@ impl Builder<'_> {
                 None => None,
             };
             Credential::from_pem(certificate, key, self.password(&where_, spec)?)
+                .key_settings(self.document.server.keys.key_settings())
         } else {
             let backend = spec
                 .backend

@@ -261,6 +261,7 @@ pub fn caguax::credential::CredentialBuilder::build(self) -> caguax::credential:
 pub fn caguax::credential::CredentialBuilder::cadata(self, impl core::convert::Into<alloc::vec::Vec<u8>>) -> Self
 pub fn caguax::credential::CredentialBuilder::cafile(self, impl core::convert::Into<std::path::PathBuf>) -> Self
 pub fn caguax::credential::CredentialBuilder::capath(self, impl core::convert::Into<std::path::PathBuf>) -> Self
+pub fn caguax::credential::CredentialBuilder::key_settings(self, coqui_sslcontext::settings::KeySettings) -> Self
 pub fn caguax::credential::CredentialBuilder::keystore_options(self, caguax::credential::KeystoreOptions) -> Self
 pub fn caguax::credential::CredentialBuilder::minimum_version(self, coqui_sslcontext::settings::TlsVersion) -> Self
 pub fn caguax::credential::CredentialBuilder::name(self, impl core::convert::Into<alloc::string::String>) -> Self
@@ -341,7 +342,7 @@ pub fn caguax::intercept::Interceptor::fmt(&self, &mut core::fmt::Formatter<'_>)
 pub const caguax::intercept::DEFAULT_CA_NAME: &str
 pub fn caguax::intercept::create_ca(&caguax::route::Router, caguax::intercept::CaOptions) -> caguax::error::Result<coqui_sslcontext::issue::CertificateAuthority>
 pub fn caguax::intercept::is_name_constrained(&coqui_sslcontext::issue::CertificateAuthority) -> bool
-pub fn caguax::intercept::load_ca(&caguax::settings::CaSettings) -> caguax::error::Result<coqui_sslcontext::issue::CertificateAuthority>
+pub fn caguax::intercept::load_ca(&caguax::settings::CaSettings, &coqui_sslcontext::settings::KeySettings) -> caguax::error::Result<coqui_sslcontext::issue::CertificateAuthority>
 pub fn caguax::intercept::permitted_names(&caguax::route::Router) -> core::option::Option<alloc::vec::Vec<alloc::string::String>>
 pub mod caguax::keylog
 pub struct caguax::keylog::FileKeyLog
@@ -711,6 +712,13 @@ pub caguax::settings::InterceptSettings::leaf_cache_capacity: usize
 pub caguax::settings::InterceptSettings::leaf_validity: core::time::Duration
 impl core::default::Default for caguax::settings::InterceptSettings
 pub fn caguax::settings::InterceptSettings::default() -> Self
+#[non_exhaustive] pub struct caguax::settings::KeyLimits
+pub caguax::settings::KeyLimits::max_pbkdf2_iterations: u32
+pub caguax::settings::KeyLimits::max_scrypt_memory: u64
+impl caguax::settings::KeyLimits
+pub fn caguax::settings::KeyLimits::key_settings(&self) -> coqui_sslcontext::settings::KeySettings
+impl core::default::Default for caguax::settings::KeyLimits
+pub fn caguax::settings::KeyLimits::default() -> Self
 #[non_exhaustive] pub struct caguax::settings::ServerSettings
 pub caguax::settings::ServerSettings::accept_error_delay: core::time::Duration
 pub caguax::settings::ServerSettings::allow_remote: bool
@@ -724,6 +732,7 @@ pub caguax::settings::ServerSettings::idle_timeout: core::option::Option<core::t
 pub caguax::settings::ServerSettings::intercept: caguax::settings::InterceptSettings
 pub caguax::settings::ServerSettings::keep_alive: bool
 pub caguax::settings::ServerSettings::keylog: core::option::Option<std::path::PathBuf>
+pub caguax::settings::ServerSettings::keys: caguax::settings::KeyLimits
 pub caguax::settings::ServerSettings::listen: alloc::vec::Vec<caguax::listen::ListenAddr>
 pub caguax::settings::ServerSettings::listen_backlog: u32
 pub caguax::settings::ServerSettings::log_traffic: bool
@@ -1014,6 +1023,7 @@ pub fn caguax::credential::CredentialBuilder::build(self) -> caguax::credential:
 pub fn caguax::credential::CredentialBuilder::cadata(self, impl core::convert::Into<alloc::vec::Vec<u8>>) -> Self
 pub fn caguax::credential::CredentialBuilder::cafile(self, impl core::convert::Into<std::path::PathBuf>) -> Self
 pub fn caguax::credential::CredentialBuilder::capath(self, impl core::convert::Into<std::path::PathBuf>) -> Self
+pub fn caguax::credential::CredentialBuilder::key_settings(self, coqui_sslcontext::settings::KeySettings) -> Self
 pub fn caguax::credential::CredentialBuilder::keystore_options(self, caguax::credential::KeystoreOptions) -> Self
 pub fn caguax::credential::CredentialBuilder::minimum_version(self, coqui_sslcontext::settings::TlsVersion) -> Self
 pub fn caguax::credential::CredentialBuilder::name(self, impl core::convert::Into<alloc::string::String>) -> Self
@@ -1052,6 +1062,13 @@ pub fn caguax::intercept::Interceptor::settings(&self) -> &caguax::settings::Int
 pub fn caguax::intercept::Interceptor::with_keylog(self, alloc::sync::Arc<dyn rustls::key_log::KeyLog>) -> Self
 impl core::fmt::Debug for caguax::intercept::Interceptor
 pub fn caguax::intercept::Interceptor::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+#[non_exhaustive] pub struct caguax::KeyLimits
+pub caguax::KeyLimits::max_pbkdf2_iterations: u32
+pub caguax::KeyLimits::max_scrypt_memory: u64
+impl caguax::settings::KeyLimits
+pub fn caguax::settings::KeyLimits::key_settings(&self) -> coqui_sslcontext::settings::KeySettings
+impl core::default::Default for caguax::settings::KeyLimits
+pub fn caguax::settings::KeyLimits::default() -> Self
 #[non_exhaustive] pub struct caguax::KeystoreOptions
 pub caguax::KeystoreOptions::keychain: core::option::Option<std::path::PathBuf>
 pub caguax::KeystoreOptions::location: caguax::credential::StoreLocation
@@ -1199,6 +1216,7 @@ pub caguax::ServerSettings::idle_timeout: core::option::Option<core::time::Durat
 pub caguax::ServerSettings::intercept: caguax::settings::InterceptSettings
 pub caguax::ServerSettings::keep_alive: bool
 pub caguax::ServerSettings::keylog: core::option::Option<std::path::PathBuf>
+pub caguax::ServerSettings::keys: caguax::settings::KeyLimits
 pub caguax::ServerSettings::listen: alloc::vec::Vec<caguax::listen::ListenAddr>
 pub caguax::ServerSettings::listen_backlog: u32
 pub caguax::ServerSettings::log_traffic: bool

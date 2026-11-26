@@ -419,7 +419,7 @@ async fn build_state(
     }
     connect.warm_up().await?;
     let interceptor = if settings.ca.is_configured() {
-        let ca = load_ca(&settings.ca)?;
+        let ca = load_ca(&settings.ca, &settings.keys.key_settings())?;
         let mut interceptor = Interceptor::new(ca, settings.intercept.clone())?;
         if let Some(keylog) = &keylog {
             interceptor = interceptor.with_keylog(Arc::clone(keylog) as Arc<dyn rustls::KeyLog>);

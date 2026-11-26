@@ -547,3 +547,52 @@ fn a_missing_file_is_an_io_error() {
     assert!(matches!(error, Error::Io(_)));
     let _ = Server::direct;
 }
+
+#[tokio::test]
+async fn key_derivation_bounds_are_settings_a_raised_one_is_listed_and_a_low_one_refuses_the_key() {
+    let ca = CertificateAuthority::builder("Locked").create().unwrap();
+    let directory = tempfile::tempdir().unwrap();
+    let encrypted = ca
+        .private_key_pem(&KeyPassword::Secret(Secret::new("open sesame")))
+        .unwrap();
+    std::fs::write(directory.path().join("c.pem"), ca.certificate_pem()).unwrap();
+    std::fs::write(directory.path().join("c.key"), encrypted.as_bytes()).unwrap();
+    std::fs::write(directory.path().join("pass"), "open sesame\n").unwrap();
+    let text = |keys: &str| {
+        format!(
+            "[server.keys]\n{keys}\n[credentials.c]\nbackend = \"pem\"\ncertificate = \"c.pem\"\nkey = \"c.key\"\npassword_file = \"pass\"\n[[rules]]\nmatch = \"x\"\naction = \"tls\"\ncredential = \"c\"\n"
+        )
+    };
+    let credential = |keys: &str| {
+        let document = parse(&text(keys)).unwrap();
+        let router = build_router(&document, Some(directory.path())).unwrap();
+        match router.rules()[0].route().tls() {
+            Some(caguax::TlsSource::Credential(credential)) => credential.clone(),
+            _ => panic!("no credential"),
+        }
+    };
+    // Defaults open the key.
+    credential("").tls_config("x.example").await.unwrap();
+    // A bound below what the key asks for refuses it before any work.
+    let refused = credential("max_pbkdf2_iterations = 1\nmax_scrypt_memory = 1");
+    let error = refused.tls_config("x.example").await.unwrap_err();
+    assert!(matches!(error, Error::CredentialUnavailable(_)), "{error}");
+    // A stricter bound is not listed; a raised one is, in the settings and on the credential.
+    assert!(
+        parse(&text("max_pbkdf2_iterations = 1"))
+            .unwrap()
+            .server
+            .non_defaults()
+            .is_empty()
+    );
+    let raised = parse(&text("max_pbkdf2_iterations = 20000000")).unwrap();
+    assert_eq!(
+        raised.server.non_defaults(),
+        ["server.keys.max_pbkdf2_iterations = 20000000"]
+    );
+    let credential = credential("max_scrypt_memory = 2147483648");
+    assert_eq!(
+        credential.non_defaults(),
+        ["credentials.c.max_scrypt_memory = 2147483648"]
+    );
+}

@@ -11,7 +11,8 @@ use std::path::PathBuf;
 #[cfg(any(windows, target_os = "macos", feature = "pkcs11"))]
 use coqui_sslcontext::IdentitySource as _;
 use coqui_sslcontext::{
-    ClientCertificates, Identity, IdentityQuery, KeyPassword, Pin, Tls, TlsVersion, Trust,
+    ClientCertificates, Identity, IdentityQuery, KeyPassword, KeySettings, Pin, Tls, TlsVersion,
+    Trust,
 };
 use rustls::pki_types::CertificateDer;
 use rustls::pki_types::pem::PemObject as _;
@@ -121,6 +122,7 @@ enum Source {
         certificate: Vec<u8>,
         key: Option<Vec<u8>>,
         password: KeyPassword,
+        keys: KeySettings,
     },
     Keystore {
         backend: Backend,
@@ -190,6 +192,7 @@ impl Credential {
             certificate: certificate.into(),
             key,
             password,
+            keys: KeySettings::default(),
         })
     }
 
@@ -333,6 +336,16 @@ impl CredentialBuilder {
         self
     }
 
+    /// The most key derivation work an encrypted key of a PEM credential may ask for (default
+    /// [`KeySettings::default`]); a raised bound is listed by `non_defaults()`. Ignored by the
+    /// other sources.
+    pub fn key_settings(mut self, settings: KeySettings) -> Self {
+        if let Source::Pem { keys, .. } = &mut self.source {
+            *keys = settings;
+        }
+        self
+    }
+
     /// How a keystore backend is opened; ignored by the other sources.
     pub fn keystore_options(mut self, options: KeystoreOptions) -> Self {
         if let Source::Keystore { options: slot, .. } = &mut self.source {
@@ -411,6 +424,7 @@ fn identity_from_pem(
     certificate: &[u8],
     key: Option<&[u8]>,
     password: &KeyPassword,
+    keys: &KeySettings,
 ) -> core::result::Result<Identity, coqui_sslcontext::Error> {
     match key {
         Some(key) => {
@@ -419,7 +433,7 @@ fn identity_from_pem(
                 .any(|window| window == b"-----BEGIN")
                 || key.windows(10).any(|window| window == b"-----BEGIN")
             {
-                Identity::from_pem_with(certificate, key, password)
+                Identity::from_pem_with_settings(certificate, key, password, keys)
             } else {
                 Identity::from_der([certificate], key)
             }
@@ -428,7 +442,7 @@ fn identity_from_pem(
             .windows(10)
             .any(|window| window == b"-----BEGIN") =>
         {
-            Identity::from_pem_with(certificate, certificate, password)
+            Identity::from_pem_with_settings(certificate, certificate, password, keys)
         }
         None => Identity::from_pkcs12(certificate, password),
     }
@@ -540,8 +554,9 @@ fn build(source: &Source, verification: &Verification, name: &str) -> Result<Tls
             certificate,
             key,
             password,
+            keys,
         } => ClientCertificates::Identity(
-            identity_from_pem(certificate, key.as_deref(), password)
+            identity_from_pem(certificate, key.as_deref(), password, keys)
                 .map_err(|error| unavailable(name, error))?,
         ),
         Source::Keystore {
@@ -573,6 +588,20 @@ impl Credential {
                 &self.name
             };
             found.push(alloc::format!("credentials.{label}.verify = false"));
+        }
+        if let Source::Pem { keys, .. } = &self.source {
+            let label = if self.name.is_empty() {
+                "credential"
+            } else {
+                &self.name
+            };
+            for entry in keys.non_defaults() {
+                found.push(alloc::format!(
+                    "credentials.{label}.{} = {}",
+                    entry.setting,
+                    entry.value
+                ));
+            }
         }
         found
     }

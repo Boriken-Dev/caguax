@@ -263,6 +263,7 @@ keys are errors; a duration is seconds or `"500ms"`, `"30s"`, `"2m"`, `"1h"`, `"
 | `intercept.leaf_cache_capacity`, `intercept.leaf_validity` | 256, 7 days |
 | `relay_buffer` | 64 KiB |
 | `pac_hosts` | none (IP literals and `localhost` are always served) |
+| `keys.max_pbkdf2_iterations`, `keys.max_scrypt_memory` | 10 000 000, 1 GiB: the most key derivation work an encrypted CA or `pem` credential key may ask for before it is refused; a raised bound is listed (`server.keys.<name> = N`, `credentials.<name>.<name> = N`) |
 | `keep_alive` | true |
 | `happy_eyeballs_delay` | 250 ms |
 | `warn_interval`, `accept_error_delay` | 10 s, 100 ms |
