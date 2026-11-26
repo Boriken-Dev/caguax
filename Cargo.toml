@@ -58,6 +58,10 @@ coqui-net-acl = { git = "https://github.com/Boriken-Dev/coqui-net-acl", rev = "8
 # Configuration discovery, format selection and typed reads.
 anycfg = { git = "https://github.com/jose-pr/anycfg-rs", rev = "bf71f70" }
 serde = { version = "1", features = ["derive"] }
+# The listener login: a random password, a constant-time compare and the Basic encoding (already in the tree through coqui-proxy).
+getrandom = "0.3"
+subtle = { version = "2", default-features = false }
+base64 = "0.22"
 serde_json = { version = "1", features = ["preserve_order"] }
 toml = { version = "0.9", features = ["preserve_order"] }
 thiserror = "2"

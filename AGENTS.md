@@ -191,17 +191,26 @@ at `GET /proxy.pac`.
 
 ```rust
 Server::builder(impl Routing + 'static) -> ServerBuilder      // Server::direct() = Router::new()
-ServerBuilder::{settings(ServerSettings), listen(iter of ListenAddr), allow_remote(bool), egress(Egress), ca(CertificateAuthority) -> Result<Self>,
+ServerBuilder::{settings(ServerSettings), listen(iter of ListenAddr), auth(Auth), allow_remote(bool), egress(Egress), ca(CertificateAuthority) -> Result<Self>,
                 interceptor(Interceptor), recorder(impl Recorder), tunnel(impl Into<Tunnel>), tunnels(iter), start().await -> Result<Server>}
 Server::{addresses, port, tunnels, tunnel_address(&Tunnel), settings, router, interceptor, recorders, non_defaults,
+         proxy_login() -> Option<Login>,
          open_upstream(&Connection, &Route, OpenOptions).await, start_recording(..), relay_session(.., RelaySession).await,
          reload(ServerSettings, impl Routing).await, serve().await, shutdown(self).await}
-Tunnel::builder(listen: &str, target: &str) -> Result<TunnelBuilder>; TunnelBuilder::{route, name, build}
-Tunnel::{listen, target, target_host_port, route, name}                     // name defaults to "tunnel:<target>"
+Tunnel::builder(listen: &str, target: &str) -> Result<TunnelBuilder>; TunnelBuilder::{route, name, allow_any_local(bool), build}
+Tunnel::{listen, target, target_host_port, route, name, allow_any_local}    // name defaults to "tunnel:<target>"
 server::relay(client, upstream, RelayOptions), IdleRead<S>
 blocking::Server::builder(router) -> blocking::ServerBuilder::{with(Fn(ServerBuilder) -> ServerBuilder), worker_threads(n), start()}
 blocking::Server::{server, addresses, port, tunnel_address, shutdown(self)}
 ```
+
+The HTTP proxy listener asks for a login first (`ServerSettings::auth`, below): without
+`Proxy-Authorization: Basic` for it, every request (`CONNECT`, forwarded and `/proxy.pac`
+included) is answered `407` with `Proxy-Authenticate: Basic realm="caguax"` and
+`Connection: close`, compared in constant time, and nothing is routed. The client's
+`Proxy-Authorization` is never forwarded. A tunnel (raw TCP) cannot be asked: `start` and
+`reload` refuse a tunnel whose route carries a credential (a `tls` credential, an upstream proxy
+URL with a user, or any proxy answer with feature `negotiate`) unless `allow_any_local(true)`.
 
 The HTTP proxy listener:
 
@@ -216,7 +225,7 @@ The HTTP proxy listener:
   relayed as bytes. Several requests share a client connection (`keep_alive`), each routed on its
   own; 1xx interim responses other than `101` are not passed on.
 - **`GET /proxy.pac`** (origin form, to the proxy itself): the PAC script; other local paths `404`.
-- Statuses: `400` malformed request or head over `max_head_bytes`, `403` rejected, `502`
+- Statuses: `407` no valid listener login, `400` malformed request or head over `max_head_bytes`, `403` rejected, `502`
   destination or upstream unreachable or credential unavailable (the body says which, never a
   secret), `504` timeout waiting for the destination's answer.
 
@@ -237,9 +246,10 @@ keys are errors; a duration is seconds or `"500ms"`, `"30s"`, `"2m"`, `"1h"`, `"
 | Field (`[server]` key) | Default |
 | --- | --- |
 | `listen` | `127.0.0.1:0`; `[]` means no HTTP proxy listener |
+| `auth` | required: a login generated at start (user `caguax`, 256-bit password); see below |
 | `allow_remote` | false |
 | `connect_timeout` (alias `timeout`) | 30 s; also bounds the head read, TLS handshakes and the upstream `CONNECT` reply |
-| `idle_timeout` | none |
+| `idle_timeout` | 5 minutes (`ServerSettings::DEFAULT_IDLE_TIMEOUT`); `0` in a file or `None` in code disables it |
 | `close_timeout` | 2 s (waiting for a TLS shutdown to be answered) |
 | `listen_backlog` | 128 |
 | `max_connections` | 1024; a connection beyond it is closed |
@@ -254,8 +264,22 @@ keys are errors; a duration is seconds or `"500ms"`, `"30s"`, `"2m"`, `"1h"`, `"
 | `warn_interval`, `accept_error_delay` | 10 s, 100 ms |
 
 `validate` refuses a zero timeout, count or size (those mean nothing). `non_defaults()` lists
-`allow_remote` and `keylog`; `Server::non_defaults()` adds a CA that is not name-constrained and
-credentials with `verify = false`.
+`allow_remote`, `auth = none`, `idle_timeout = none` and `keylog`; `Server::non_defaults()` adds a
+CA that is not name-constrained, credentials with `verify = false` and each
+`tunnels.<name>.allow_any_local = true`.
+
+```rust
+enum Auth { Generated { user, file: Option<PathBuf> }, Env { user, name }, File { user, path }, Login(Login), None }  // non_exhaustive; Default = Generated { "caguax", None }
+Login::{new(user, password) -> Result<Login>, user, password, userinfo() -> "user:password", header_value() -> "Basic ..."}   // Debug shows the user only
+const auth::DEFAULT_USER: &str = "caguax"
+```
+
+`[server] auth` is `"none"`, `"generated"` (the default) or a table: `user` (default `caguax`) with
+one of `password_env` (variable read when the settings are applied), `password_file` (first line)
+or, for a generated password, `file` (where `user:password` is written: replaced whole, mode `0600`
+on Unix, missing directories `0700`; the library writes nothing when `file` is unset, and
+`caguax run` defaults it to `caguax.auth` beside the configuration file). A reload keeps a
+generated login; the password is never logged or put in an error.
 
 ## Configuration (`caguax::config`)
 
@@ -287,7 +311,7 @@ included); they never quote a value (a refused key is named). Tables, in TOML:
                                  # pem: certificate, key, password_env | password_file; verify, cafile, capath, cadata, minimum_version
 [[rules]]                        # match = pattern or list (any of); port = int or list; path = regex; action, credential, upstream, name
 [default]                        # action, credential, upstream, name
-[[tunnels]]                      # listen, target = "host:port", credential (implies action = "tls"), action, upstream, name
+[[tunnels]]                      # listen, target = "host:port", credential (implies action = "tls"), action, upstream, name, allow_any_local
 ```
 
 `action` defaults to `direct`; `credential` is required with `tls` and an error with `direct`;
@@ -320,7 +344,8 @@ caguax [-c FILE] [-v|-q]... [--loglevel [NAME:]LEVEL[,...]] <command>
                  [--module PATH] [--token LABEL] [--pin none|ask|keystore] and, for list and probe, [--format text|json] [--json]
 ```
 
-`run` prints `proxy http://HOST:PORT` per listener, `tunnel HOST:PORT -> TARGET` per tunnel and
+`run` prints `proxy http://HOST:PORT` per listener, `login FILE` (where a generated listener login
+was written: never the password), `tunnel HOST:PORT -> TARGET` per tunnel and
 `non-default <setting>` per setting looser than the defaults, then waits; a configuration that
 cannot start is exit status 2 (or 1 for an address in use). `check` prints
 `destination=URL rule=NAME action=ACTION [credential=NAME] [upstream=TEXT]` (`rule` is the route's
@@ -359,7 +384,7 @@ Ctrl-C with `0`). `--format json` output is stable.
   `<-loopback>` (`Egress::Resolver`).
 - A CA name-constrained to an IP address only was refused by curl on Windows (schannel); one
   constrained to a DNS name was accepted. rustls clients accept both.
-- `idle_timeout` ends a relayed direction (tunnels, upgrades) and a forwarded exchange that is
+- `idle_timeout` (5 minutes by default) ends a relayed direction (tunnels, upgrades) and a forwarded exchange that is
   silent that long; it does not close an idle keep-alive client connection (`connect_timeout`
   does).
 - Bytes a client sends right after `CONNECT`, before the `200`, are handshake input for an

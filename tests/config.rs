@@ -304,6 +304,17 @@ fn the_router_alone_can_be_built_and_tunnels_with_a_credential_are_tls() {
     let explanation = router.explain(&Connection::new("api.corp.example", 443).unwrap());
     assert_eq!(explanation.route.action(), Action::Tls);
     assert_eq!(explanation.route.name(), "corp");
+    // Any local process could use the tunnel's client certificate: the load is refused.
+    let refused = build_parts(
+        &document,
+        BuildOptions::default().base_dir(directory.path()),
+    )
+    .unwrap_err();
+    assert!(
+        message(refused).contains("allow_any_local"),
+        "the refusal names the opt-in"
+    );
+    let document = parse(&format!("{text}allow_any_local = true\n")).unwrap();
     let parts = build_parts(
         &document,
         BuildOptions::default().base_dir(directory.path()),
@@ -311,23 +322,85 @@ fn the_router_alone_can_be_built_and_tunnels_with_a_credential_are_tls() {
     .unwrap();
     assert_eq!(parts.tunnels.len(), 1);
     assert_eq!(parts.tunnels[0].route().unwrap().action(), Action::Tls);
+    assert!(parts.tunnels[0].allow_any_local());
+}
+
+#[test]
+fn the_listener_login_is_none_generated_a_password_file_or_an_environment_variable() {
+    let auth =
+        |text: &str| parse(&format!("[server]\n{text}\n")).map(|document| document.server.auth);
+    assert!(auth("auth = \"none\"").unwrap().is_none());
+    assert!(matches!(
+        auth("").unwrap(),
+        caguax::Auth::Generated { file: None, .. }
+    ));
+    assert!(matches!(
+        auth("auth = \"generated\"").unwrap(),
+        caguax::Auth::Generated { .. }
+    ));
+    assert!(matches!(
+        auth("auth = { user = \"bob\", password_env = \"BOB_PASSWORD\" }").unwrap(),
+        caguax::Auth::Env { user, name } if user == "bob" && name == "BOB_PASSWORD"
+    ));
+    assert!(matches!(
+        auth("auth = { password_file = \"pw\" }").unwrap(),
+        caguax::Auth::File { user, .. } if user == "caguax"
+    ));
+    assert!(matches!(
+        auth("auth = { file = \"where.auth\" }").unwrap(),
+        caguax::Auth::Generated { file: Some(_), .. }
+    ));
+    for bad in [
+        "auth = \"required\"",
+        "auth = { password_env = \"A\", password_file = \"b\" }",
+        "auth = { password_env = \"A\", file = \"b\" }",
+        "auth = { user = \"a:b\" }",
+        "auth = { password = \"in-the-file\" }",
+    ] {
+        assert!(auth(bad).is_err(), "{bad}");
+    }
+    // `Debug` never shows the password.
+    let login = caguax::Login::new("bob", "hunter2-secret").unwrap();
+    assert!(!format!("{login:?} {:?}", caguax::Auth::Login(login.clone())).contains("hunter2"));
 }
 
 #[tokio::test]
 async fn a_configuration_file_drives_the_server() {
     let pki = Pki::new();
     let origin = echo_origin(Some(pki.server_config(true))).await;
-    let directory = config_dir(&pki, DOCUMENT);
+    let directory = config_dir(
+        &pki,
+        &DOCUMENT.replace(
+            "timeout = 10\n",
+            "timeout = 10\nauth = { user = \"alice\", password_file = \"proxy.pw\" }\n",
+        ),
+    );
+    std::fs::write(directory.path().join("proxy.pw"), "file-secret\n").unwrap();
     let server = load_server(directory.path().join("caguax.toml"))
         .unwrap()
         .start()
         .await
         .unwrap();
     let proxy = server.addresses()[0];
-    let (head, body) = get_through(proxy, &format!("127.0.0.1:{}/c", origin.port()), "").await;
+    // The password file is relative to the configuration file.
+    let login = caguax::Login::new("alice", "file-secret").unwrap();
+    assert_eq!(server.proxy_login().unwrap().userinfo(), login.userinfo());
+    let (head, _) = get_through(proxy, "a.blocked.example/", "").await;
+    assert_eq!(status(&head), 407, "{head}");
+    let (head, body) = get_through(
+        proxy,
+        &format!("127.0.0.1:{}/c", origin.port()),
+        &format!("Proxy-Authorization: {}\r\n", login.header_value()),
+    )
+    .await;
     assert_eq!(status(&head), 200, "{head} {body}");
     assert!(body.contains("client-subject: CN=client-rsa"), "{body}");
-    let (head, _) = get_through(proxy, "a.blocked.example/", "").await;
+    let (head, _) = get_through(
+        proxy,
+        "a.blocked.example/",
+        &format!("Proxy-Authorization: {}\r\n", login.header_value()),
+    )
+    .await;
     assert_eq!(status(&head), 403);
     server.shutdown().await;
 }

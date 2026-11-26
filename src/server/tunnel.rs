@@ -9,7 +9,9 @@ use super::{Inner, OpenOptions};
 use crate::connection::{Connection, Scheme};
 use crate::error::{Result, config};
 use crate::listen::ListenAddr;
-use crate::route::{Action, Route};
+use crate::route::{Action, Route, Routing, TlsSource};
+use crate::settings::ServerSettings;
+use crate::upstream::Egress;
 
 /// A local port whose connections go to one fixed `target`.
 ///
@@ -23,6 +25,7 @@ pub struct Tunnel {
     port: u16,
     route: Option<Route>,
     name: String,
+    allow_any_local: bool,
 }
 
 impl Tunnel {
@@ -44,6 +47,7 @@ impl Tunnel {
                 port,
                 route: None,
                 name: alloc::format!("tunnel:{}", target.trim()),
+                allow_any_local: false,
             },
         })
     }
@@ -72,6 +76,11 @@ impl Tunnel {
     pub fn name(&self) -> &str {
         &self.name
     }
+
+    /// Whether any local process may use a route that carries a credential (default false).
+    pub fn allow_any_local(&self) -> bool {
+        self.allow_any_local
+    }
 }
 
 /// Builds a [`Tunnel`].
@@ -94,6 +103,15 @@ impl TunnelBuilder {
         self
     }
 
+    /// Lets any local process use the tunnel although its route carries a credential: a client
+    /// certificate, or a login to an upstream proxy. A tunnel is raw TCP, so no login can be asked
+    /// of its clients; without this the server refuses to start with such a route. Listed by
+    /// [`Server::non_defaults`](super::Server::non_defaults).
+    pub fn allow_any_local(mut self, allow: bool) -> Self {
+        self.tunnel.allow_any_local = allow;
+        self
+    }
+
     /// The finished tunnel.
     pub fn build(self) -> Tunnel {
         self.tunnel
@@ -104,6 +122,54 @@ impl From<TunnelBuilder> for Tunnel {
     fn from(builder: TunnelBuilder) -> Self {
         builder.build()
     }
+}
+
+/// Whether `route` sends a credential the operator holds: a client certificate, or a login to an
+/// upstream proxy (a URL with a user, or, with `negotiate`, any proxy that may ask for one).
+fn carries_credential(route: &Route, settings: &ServerSettings) -> bool {
+    if route.action() == Action::Reject {
+        return false;
+    }
+    if matches!(route.tls(), Some(TlsSource::Credential(_))) {
+        return true;
+    }
+    match route.upstream().or(settings.egress.as_ref()) {
+        None | Some(Egress::Direct) => false,
+        Some(Egress::Proxy(text)) => cfg!(feature = "negotiate") || text.contains('@'),
+        Some(_) => cfg!(feature = "negotiate"),
+    }
+}
+
+/// Refuses a tunnel whose route carries a credential unless it set `allow_any_local`: the login
+/// a client of the HTTP listener gives cannot be asked of a raw TCP connection.
+///
+/// # Errors
+///
+/// [`crate::Error::Config`] naming the tunnel.
+pub(crate) fn check_credentials<'a>(
+    tunnels: impl Iterator<Item = &'a Tunnel>,
+    router: &dyn Routing,
+    settings: &ServerSettings,
+) -> Result<()> {
+    for tunnel in tunnels.filter(|tunnel| !tunnel.allow_any_local) {
+        let (host, port) = tunnel.target_host_port();
+        let connection = Connection::builder(&host, port)
+            .scheme(Scheme::Tcp)
+            .listener(tunnel.name())
+            .build()?;
+        let route = tunnel
+            .route()
+            .cloned()
+            .unwrap_or_else(|| router.route(&connection));
+        if carries_credential(&route, settings) {
+            return Err(config(alloc::format!(
+                "tunnel {}: its route carries a credential and a tunnel cannot ask its clients for \
+                 a login, so any local process would use it; set allow_any_local = true to allow that",
+                tunnel.name()
+            )));
+        }
+    }
+    Ok(())
 }
 
 /// Serves one connection accepted by a tunnel listener.

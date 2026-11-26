@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Security
+
+- The HTTP proxy listener requires `Proxy-Authorization: Basic` by default (`407` otherwise, nothing is
+  routed): a login generated when the server starts (written owner-only to `caguax.auth` beside the
+  configuration by `caguax run`), or one named by `server.auth` (`password_env`, `password_file`).
+  `server.auth = "none"` turns it off and is listed as `non-default`.
+- A tunnel whose route carries a credential (a client certificate, an upstream login) is refused at load
+  unless it sets `allow_any_local = true`, which is listed as `non-default`.
+- `server.idle_timeout` defaults to 5 minutes, so a silent connection cannot hold a slot for ever; `0`
+  disables it and is listed as `non-default`.
+
 ### Added
 
 - The `caguax` library and command: a local proxy server in which rules decide, per request,

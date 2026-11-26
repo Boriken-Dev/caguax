@@ -65,6 +65,18 @@ server.shutdown().await;
 # }
 ```
 
+The listener asks every client for a login (`Proxy-Authorization: Basic`): `caguax run` writes a
+generated one, as `user:password`, to `caguax.auth` beside the configuration file (owner-only on
+Unix) and prints its path as `login FILE`, so a client is pointed at the proxy with:
+
+```sh
+curl -x http://127.0.0.1:3128 -U "$(cat caguax.auth)" https://example.com/
+```
+
+`HTTPS_PROXY=http://user:password@127.0.0.1:3128` works the same for tools that read the
+variables. Library code gets the login from `Server::proxy_login()`. A refused request is
+`407 Proxy Authentication Required` with `Connection: close`, and nothing reaches the destination.
+
 From synchronous code, the same server owns a runtime of its own:
 
 ```rust
@@ -113,9 +125,12 @@ Unknown tables and keys are errors; relative paths are relative to the file.
 ```toml
 [server]
 listen = "127.0.0.1:3128"
+# auth = "none"              # no listener login: any local process uses the proxy's credentials
+# auth = { user = "me", password_env = "CAGUAX_PROXY_PASSWORD" }   # or password_file = "proxy.pw"
+# auth = { file = "/run/user/1000/caguax.auth" }                   # where a generated login goes
 egress = "system"            # "system" | "env" | "auto" | "direct" | "pac:<location>" | a proxy URL
 connect_timeout = "30s"      # also accepted as `timeout`
-idle_timeout = "5m"
+idle_timeout = "5m"          # the default; 0 never ends a silent connection
 log_traffic = true
 
 [server.ca]
@@ -146,7 +161,14 @@ action = "direct"
 listen = "127.0.0.1:15432"
 target = "db.corp.example:5432"
 credential = "work"
+allow_any_local = true       # required with a credential: a tunnel is raw TCP, no login can be asked
 ```
+
+The listener login protects the HTTP proxy port. A `[[tunnels]]` port is raw TCP, so it cannot ask
+for one: a tunnel whose route carries a credential (a client certificate, or a login to an
+upstream proxy) is refused when the configuration is loaded unless it says `allow_any_local =
+true`, which `caguax run` lists as `non-default tunnels.<name>.allow_any_local = true`. Both
+`auth = "none"` and `idle_timeout = 0` are listed the same way (`non-default server.auth = none`).
 
 The settings, with their defaults, are listed in the
 [API header](https://github.com/Boriken-Dev/caguax/blob/main/AGENTS.md).

@@ -504,11 +504,13 @@ name = "caguax"
 version = "0.0.0-alpha.0"
 dependencies = [
  "anycfg",
+ "base64 0.22.1",
  "bytes",
  "clap",
  "coqui-net-acl",
  "coqui-proxy",
  "coqui-sslcontext",
+ "getrandom 0.3.4",
  "http-body-util",
  "hyper",
  "hyper-util",
@@ -520,6 +522,7 @@ dependencies = [
  "serde",
  "serde-saphyr",
  "serde_json",
+ "subtle",
  "tempfile",
  "thiserror",
  "tokio",

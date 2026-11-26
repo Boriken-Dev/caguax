@@ -374,6 +374,13 @@ fn start(file: &Path, until: impl Fn(&str) -> bool) -> (Running, Vec<String>) {
     (Running(child), lines)
 }
 
+/// The login `caguax run` wrote beside its configuration file.
+fn login_in(directory: &std::path::Path) -> caguax::Login {
+    let text = std::fs::read_to_string(directory.join("caguax.auth")).unwrap();
+    let (user, password) = text.trim_end().split_once(':').unwrap();
+    caguax::Login::new(user, password).unwrap()
+}
+
 #[tokio::test]
 async fn run_serves_what_the_file_says_and_prints_its_addresses() {
     let origin = echo_origin(None).await;
@@ -386,13 +393,24 @@ async fn run_serves_what_the_file_says_and_prints_its_addresses() {
     .unwrap();
     let (child, lines) = start(&file, |line| line.starts_with("non-default"));
     assert!(lines[0].starts_with("proxy http://127.0.0.1:"), "{lines:?}");
+    assert_eq!(
+        lines[1],
+        format!("login {}", directory.path().join("caguax.auth").display()),
+        "{lines:?}"
+    );
     assert!(
-        lines[1].starts_with("tunnel 127.0.0.1:") && lines[1].ends_with("-> 127.0.0.1:9"),
+        lines[2].starts_with("tunnel 127.0.0.1:") && lines[2].ends_with("-> 127.0.0.1:9"),
         "{lines:?}"
     );
     assert_eq!(
-        lines[2], "non-default server.allow_remote = true",
+        lines[3], "non-default server.allow_remote = true",
         "{lines:?}"
+    );
+    let password = login_in(directory.path()).password().to_owned();
+    assert!(!lines.concat().contains(&password));
+    let extra = format!(
+        "Proxy-Authorization: {}\r\n",
+        login_in(directory.path()).header_value()
     );
     let proxy = lines[0]
         .trim_start_matches("proxy http://")
@@ -401,11 +419,21 @@ async fn run_serves_what_the_file_says_and_prints_its_addresses() {
     let (head, body) = get_through(
         proxy,
         &format!("127.0.0.1:{}/via-binary", origin.port()),
-        "",
+        &extra,
     )
     .await;
     assert_eq!(status(&head), 200, "{head}");
     assert!(body.starts_with("GET /via-binary"));
+    // Without the login the request is refused.
+    let (head, _) = exchange_raw(
+        proxy,
+        &format!(
+            "GET http://127.0.0.1:{}/x HTTP/1.1\r\nHost: x\r\n\r\n",
+            origin.port()
+        ),
+    )
+    .await;
+    assert_eq!(status(&head), 407, "{head}");
     drop(child);
 }
 
@@ -440,7 +468,12 @@ async fn sighup_reads_the_configuration_again_and_a_bad_file_leaves_the_running_
         .parse()
         .unwrap();
     let target = format!("127.0.0.1:{}/r", origin.port());
-    let (head, _) = get_through(proxy, &target, "").await;
+    let extra = format!(
+        "Proxy-Authorization: {}\r\n",
+        login_in(directory.path()).header_value()
+    );
+    let extra = extra.as_str();
+    let (head, _) = get_through(proxy, &target, extra).await;
     assert_eq!(status(&head), 403);
     let hup = |child: &Running| {
         Command::new("kill")
@@ -452,18 +485,18 @@ async fn sighup_reads_the_configuration_again_and_a_bad_file_leaves_the_running_
     // The new document keeps the listen address only because 127.0.0.1:0 is what it was.
     hup(&child);
     for _ in 0..100 {
-        let (head, _) = get_through(proxy, &target, "").await;
+        let (head, _) = get_through(proxy, &target, extra).await;
         if status(&head) == 200 {
             break;
         }
         tokio::time::sleep(std::time::Duration::from_millis(50)).await;
     }
-    let (head, _) = get_through(proxy, &target, "").await;
+    let (head, _) = get_through(proxy, &target, extra).await;
     assert_eq!(status(&head), 200);
     std::fs::write(&file, "[server]\nbogus = 1\n").unwrap();
     hup(&child);
     tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-    let (head, _) = get_through(proxy, &target, "").await;
+    let (head, _) = get_through(proxy, &target, extra).await;
     assert_eq!(status(&head), 200, "the running configuration stays");
     let mut stderr = String::new();
     let _ = child.0.kill();

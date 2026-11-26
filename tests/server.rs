@@ -17,7 +17,7 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
 fn builder(router: Router) -> caguax::ServerBuilder {
-    Server::builder(router)
+    Server::builder(router).auth(test_auth())
 }
 
 async fn plain_server(router: Router) -> Server {
@@ -35,7 +35,7 @@ async fn a_plain_request_is_forwarded_in_origin_form_without_hop_by_hop_headers(
     let (head, body) = get_through(
         server.addresses()[0],
         &format!("127.0.0.1:{}/a/b?c=d", origin.port()),
-        "Proxy-Connection: keep-alive\r\nProxy-Authorization: Basic c2VjcmV0\r\nX-Keep: yes\r\nKeep-Alive: 5\r\nX-Named: gone\r\nConnection: x-named\r\n",
+        "Proxy-Connection: keep-alive\r\nX-Keep: yes\r\nKeep-Alive: 5\r\nX-Named: gone\r\nConnection: x-named\r\n",
     )
     .await;
     assert_eq!(status(&head), 200, "{head}");
@@ -50,7 +50,7 @@ async fn a_plain_request_is_forwarded_in_origin_form_without_hop_by_hop_headers(
         "proxy-authorization",
         "keep-alive",
         "x-named",
-        "c2VjcmV0",
+        TEST_PASSWORD,
     ] {
         assert!(
             !body.to_lowercase().contains(hidden),
@@ -81,8 +81,9 @@ async fn one_client_connection_carries_several_requests_each_routed_on_its_own()
         stream
             .write_all(
                 format!(
-                    "GET http://127.0.0.1:{}{path} HTTP/1.1\r\nHost: x\r\n\r\n",
-                    allowed.port()
+                    "GET http://127.0.0.1:{}{path} HTTP/1.1\r\nHost: x\r\n{}\r\n",
+                    allowed.port(),
+                    auth_header()
                 )
                 .as_bytes(),
             )
@@ -95,7 +96,11 @@ async fn one_client_connection_carries_several_requests_each_routed_on_its_own()
     let rejected = allowed.port() + 1;
     stream
         .write_all(
-            format!("GET http://127.0.0.1:{rejected}/ HTTP/1.1\r\nHost: x\r\n\r\n").as_bytes(),
+            format!(
+                "GET http://127.0.0.1:{rejected}/ HTTP/1.1\r\nHost: x\r\n{}\r\n",
+                auth_header()
+            )
+            .as_bytes(),
         )
         .await
         .unwrap();
@@ -202,8 +207,9 @@ async fn upgrades_are_relayed() {
     stream
         .write_all(
             format!(
-                "GET http://127.0.0.1:{}/upgrade HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: echo\r\n\r\n",
-                origin.port()
+                "GET http://127.0.0.1:{}/upgrade HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: echo\r\n{}\r\n",
+                origin.port(),
+                auth_header()
             )
             .as_bytes(),
         )
@@ -241,7 +247,7 @@ async fn an_upstream_http_proxy_gets_connect_with_basic_and_absolute_form_for_pl
     let origin = echo_origin(None).await;
     let echo = tcp_echo().await;
     let stub = stub_proxy().await;
-    let mut settings = ServerSettings::default();
+    let mut settings = test_settings();
     settings.egress = Some(proxied(&format!("http://user:s3cret@{}", stub.address)));
     let server = builder(Router::new())
         .settings(settings)
@@ -417,6 +423,7 @@ async fn a_tunnel_gives_a_plain_tcp_client_mutual_tls_to_its_target() {
     let tunnel = Tunnel::builder("127.0.0.1:0", &format!("127.0.0.1:{}", origin.port()))
         .unwrap()
         .route(route)
+        .allow_any_local(true)
         .build();
     let server = builder(Router::new())
         .listen([])
@@ -581,7 +588,7 @@ async fn a_capture_file_holds_each_session_as_a_tcp_flow() {
     let origin = echo_origin(None).await;
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("proxy.pcap");
-    let mut settings = ServerSettings::default();
+    let mut settings = test_settings();
     settings.record = Some(path.clone());
     let server = builder(Router::new())
         .settings(settings)
@@ -621,7 +628,7 @@ async fn a_capture_file_holds_each_session_as_a_tcp_flow() {
 #[tokio::test]
 async fn bounds_are_settings() {
     let echo = tcp_echo().await;
-    let mut settings = ServerSettings::default();
+    let mut settings = test_settings();
     settings.max_connections = 1;
     settings.max_head_bytes = 8192;
     settings.idle_timeout = Some(Duration::from_millis(300));
@@ -676,7 +683,7 @@ async fn eventually_accepts(proxy: SocketAddr) {
 
 #[tokio::test]
 async fn listening_beyond_loopback_needs_allow_remote_and_is_reported() {
-    let mut settings = ServerSettings::default();
+    let mut settings = test_settings();
     settings.listen = vec!["0.0.0.0:0".parse().unwrap()];
     let refused = builder(Router::new())
         .settings(settings.clone())
@@ -710,7 +717,7 @@ async fn listening_beyond_loopback_needs_allow_remote_and_is_reported() {
 #[tokio::test]
 async fn an_address_in_use_is_an_io_error_and_meaningless_settings_are_config_errors() {
     let first = plain_server(Router::new()).await;
-    let mut settings = ServerSettings::default();
+    let mut settings = test_settings();
     settings.listen = vec![first.addresses()[0].into()];
     let error = builder(Router::new())
         .settings(settings)
@@ -719,7 +726,7 @@ async fn an_address_in_use_is_an_io_error_and_meaningless_settings_are_config_er
         .unwrap_err();
     assert!(matches!(error, Error::Io(_)), "{error}");
     first.shutdown().await;
-    let mut settings = ServerSettings::default();
+    let mut settings = test_settings();
     settings.max_connections = 0;
     let error = builder(Router::new())
         .settings(settings)
@@ -791,7 +798,7 @@ async fn a_key_log_receives_the_secrets_of_the_tls_the_proxy_makes() {
     let keylog = directory.path().join("keys.log");
     let route = Route::with_tls(Arc::new(pki.credential("c"))).build();
     let router = Router::builder().rule(rule("127.0.0.1", route)).build();
-    let mut settings = ServerSettings::default();
+    let mut settings = test_settings();
     settings.keylog = Some(keylog.clone());
     let server = builder(router).settings(settings).start().await.unwrap();
     assert!(
@@ -826,7 +833,7 @@ async fn an_environment_resolver_is_an_egress() {
         ]))
         .system(false)
         .build();
-    let mut settings = ServerSettings::default();
+    let mut settings = test_settings();
     settings.egress = Some(Egress::Resolver(resolver));
     let server = builder(Router::new())
         .settings(settings)
@@ -842,6 +849,7 @@ async fn an_environment_resolver_is_an_egress() {
 #[test]
 fn the_blocking_server_runs_on_its_own_runtime() {
     let server = caguax::blocking::Server::builder(Router::new())
+        .with(|builder| builder.auth(test_auth()))
         .start()
         .unwrap();
     let proxy = server.addresses()[0];
@@ -849,7 +857,11 @@ fn the_blocking_server_runs_on_its_own_runtime() {
     let mut stream = std::net::TcpStream::connect(proxy).unwrap();
     std::io::Write::write_all(
         &mut stream,
-        b"GET /proxy.pac HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n",
+        format!(
+            "GET /proxy.pac HTTP/1.1\r\nHost: x\r\n{}Connection: close\r\n\r\n",
+            auth_header()
+        )
+        .as_bytes(),
     )
     .unwrap();
     let mut answer = String::new();
@@ -867,7 +879,11 @@ async fn a_custom_router_and_interceptor_work_through_the_traits() {
             Route::reject().name("all").build()
         }
     }
-    let server = Server::builder(RejectEverything).start().await.unwrap();
+    let server = Server::builder(RejectEverything)
+        .auth(test_auth())
+        .start()
+        .await
+        .unwrap();
     let (_, head) = connect_through(server.addresses()[0], "a.example:443").await;
     assert_eq!(status(&head), 403);
     let (head, _) = exchange(
@@ -888,5 +904,279 @@ async fn a_custom_router_and_interceptor_work_through_the_traits() {
         Action::Reject
     );
     let _ = Interceptor::new;
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_request_without_the_listener_credential_gets_407_and_never_reaches_the_origin() {
+    let origin = logged_origin().await;
+    let server = Server::direct().start().await.unwrap();
+    let proxy = server.addresses()[0];
+    let target = format!("127.0.0.1:{}", origin.address.port());
+
+    let (head, _) = exchange(
+        proxy,
+        &format!("GET http://{target}/x HTTP/1.1\r\nHost: {target}\r\nConnection: close\r\n\r\n"),
+    )
+    .await;
+    assert_eq!(status(&head), 407, "{head}");
+    let lower = head.to_lowercase();
+    assert!(lower.contains("proxy-authenticate: basic"), "{head}");
+    assert!(lower.contains("connection: close"), "{head}");
+
+    let mut stream = TcpStream::connect(proxy).await.unwrap();
+    stream
+        .write_all(format!("CONNECT {target} HTTP/1.1\r\nHost: {target}\r\n\r\n").as_bytes())
+        .await
+        .unwrap();
+    let answer = read_head(&mut stream).await.unwrap();
+    assert_eq!(status(&answer), 407, "{answer}");
+
+    assert!(origin.heads.lock().unwrap().is_empty());
+    assert_eq!(
+        origin.connections.load(std::sync::atomic::Ordering::SeqCst),
+        0
+    );
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn the_generated_login_passes_where_a_wrong_one_does_not_and_a_reload_keeps_it() {
+    let origin = logged_origin().await;
+    let server = Server::direct().start().await.unwrap();
+    let proxy = server.addresses()[0];
+    let login = server.proxy_login().expect("a generated login");
+    assert_eq!(login.user(), "caguax");
+    assert!(login.password().len() >= 32);
+    let target = format!("127.0.0.1:{}", origin.address.port());
+    let get = |header: String| {
+        format!(
+            "GET http://{target}/x HTTP/1.1\r\nHost: {target}\r\n{header}Connection: close\r\n\r\n"
+        )
+    };
+
+    let wrong = caguax::Login::new("caguax", "not-the-password").unwrap();
+    let (head, _) = exchange_raw(
+        proxy,
+        &get(format!("Proxy-Authorization: {}\r\n", wrong.header_value())),
+    )
+    .await;
+    assert_eq!(status(&head), 407, "{head}");
+    assert!(origin.heads.lock().unwrap().is_empty());
+
+    // Positive control: the same request with the login reaches the origin.
+    let with_login = get(format!("Proxy-Authorization: {}\r\n", login.header_value()));
+    let (head, _) = exchange_raw(proxy, &with_login).await;
+    assert_eq!(status(&head), 200, "{head}");
+    assert_eq!(origin.heads.lock().unwrap().len(), 1);
+    // The scheme name is case-insensitive.
+    let lower = with_login.replace("Basic ", "basic ");
+    let (head, _) = exchange_raw(proxy, &lower).await;
+    assert_eq!(status(&head), 200, "{head}");
+
+    // A CONNECT with the login opens the tunnel (the origin sees a connection).
+    let before = origin.connections.load(std::sync::atomic::Ordering::SeqCst);
+    let mut stream = TcpStream::connect(proxy).await.unwrap();
+    stream
+        .write_all(
+            format!(
+                "CONNECT {target} HTTP/1.1\r\nHost: {target}\r\nProxy-Authorization: {}\r\n\r\n",
+                login.header_value()
+            )
+            .as_bytes(),
+        )
+        .await
+        .unwrap();
+    let answer = read_head(&mut stream).await.unwrap();
+    assert_eq!(status(&answer), 200, "{answer}");
+    assert_eq!(
+        origin.connections.load(std::sync::atomic::Ordering::SeqCst),
+        before + 1
+    );
+
+    // A reload with the default settings keeps the generated login.
+    server
+        .reload(ServerSettings::default(), Router::new())
+        .await
+        .unwrap();
+    assert_eq!(server.proxy_login().unwrap().password(), login.password());
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn auth_none_lets_requests_through_and_is_listed() {
+    let origin = logged_origin().await;
+    let server = builder(Router::new())
+        .auth(caguax::Auth::None)
+        .start()
+        .await
+        .unwrap();
+    let target = format!("127.0.0.1:{}", origin.address.port());
+    let (head, _) = exchange_raw(
+        server.addresses()[0],
+        &format!("GET http://{target}/x HTTP/1.1\r\nHost: {target}\r\nConnection: close\r\n\r\n"),
+    )
+    .await;
+    assert_eq!(status(&head), 200, "{head}");
+    assert!(server.proxy_login().is_none());
+    assert!(
+        server
+            .non_defaults()
+            .iter()
+            .any(|entry| entry == "server.auth = none"),
+        "{:?}",
+        server.non_defaults()
+    );
+    server.shutdown().await;
+
+    // The strict default lists nothing about the login.
+    let strict = Server::direct().start().await.unwrap();
+    assert!(
+        strict
+            .non_defaults()
+            .iter()
+            .all(|entry| !entry.contains("auth"))
+    );
+    strict.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_password_file_names_the_login_and_an_unreadable_one_is_a_config_error() {
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("password");
+    std::fs::write(&path, "from-a-file\nsecond line\n").unwrap();
+    let auth = caguax::Auth::File {
+        user: "alice".into(),
+        path: path.clone(),
+    };
+    let server = Server::direct().auth(auth).start().await.unwrap();
+    let login = server.proxy_login().unwrap();
+    assert_eq!((login.user(), login.password()), ("alice", "from-a-file"));
+    let (head, _) = exchange(
+        server.addresses()[0],
+        &format!(
+            "GET /proxy.pac HTTP/1.1\r\nHost: x\r\nProxy-Authorization: {}\r\nConnection: close\r\n\r\n",
+            login.header_value()
+        ),
+    )
+    .await;
+    assert_eq!(status(&head), 200, "{head}");
+    server.shutdown().await;
+
+    let missing = caguax::Auth::File {
+        user: "alice".into(),
+        path: directory.path().join("absent"),
+    };
+    let error = Server::direct().auth(missing).start().await.unwrap_err();
+    assert!(matches!(error, Error::Config(_)), "{error}");
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn the_generated_login_file_is_readable_by_its_owner_only() {
+    use std::os::unix::fs::PermissionsExt;
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("nested").join("caguax.auth");
+    let auth = caguax::Auth::Generated {
+        user: "caguax".into(),
+        file: Some(path.clone()),
+    };
+    let server = Server::direct().auth(auth).start().await.unwrap();
+    let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+    assert_eq!(mode, 0o600, "{mode:o}");
+    let text = std::fs::read_to_string(&path).unwrap();
+    assert_eq!(text.trim_end(), server.proxy_login().unwrap().userinfo());
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn a_silent_connection_is_ended_by_the_default_idle_timeout_that_none_would_remove() {
+    assert_eq!(
+        ServerSettings::default().idle_timeout,
+        Some(ServerSettings::DEFAULT_IDLE_TIMEOUT)
+    );
+    let echo = tcp_echo().await;
+    let tunnel = Tunnel::builder("127.0.0.1:0", &echo.to_string())
+        .unwrap()
+        .build();
+    let mut settings = test_settings();
+    settings.idle_timeout = Some(Duration::from_millis(200));
+    let server = builder(Router::new())
+        .settings(settings)
+        .tunnel(tunnel.clone())
+        .start()
+        .await
+        .unwrap();
+    let mut stream = TcpStream::connect(server.tunnel_address(&tunnel).unwrap())
+        .await
+        .unwrap();
+    let mut rest = Vec::new();
+    let ended = tokio::time::timeout(Duration::from_secs(10), stream.read_to_end(&mut rest)).await;
+    assert!(ended.is_ok(), "the silent tunnel connection was not ended");
+    assert!(
+        server
+            .non_defaults()
+            .iter()
+            .all(|entry| !entry.contains("idle_timeout"))
+    );
+    server.shutdown().await;
+
+    let mut settings = test_settings();
+    settings.idle_timeout = None;
+    assert!(
+        settings
+            .non_defaults()
+            .iter()
+            .any(|entry| entry == "server.idle_timeout = none")
+    );
+}
+
+#[tokio::test]
+async fn a_tunnel_with_a_credential_route_needs_allow_any_local() {
+    let pki = Pki::new();
+    let origin = echo_origin(Some(pki.server_config(true))).await;
+    let target = format!("127.0.0.1:{}", origin.port());
+    let route = Route::with_tls(Arc::new(pki.credential("tunnel-client"))).build();
+    let plain = || {
+        Tunnel::builder("127.0.0.1:0", &target)
+            .unwrap()
+            .route(route.clone())
+    };
+
+    let refused = builder(Router::new())
+        .tunnel(plain().build())
+        .start()
+        .await
+        .unwrap_err();
+    assert!(matches!(refused, Error::Config(_)), "{refused}");
+    assert!(refused.to_string().contains("allow_any_local"), "{refused}");
+
+    let allowed = plain().name("db").allow_any_local(true).build();
+    let server = builder(Router::new())
+        .tunnel(allowed)
+        .start()
+        .await
+        .unwrap();
+    assert!(
+        server
+            .non_defaults()
+            .iter()
+            .any(|entry| entry == "tunnels.db.allow_any_local = true"),
+        "{:?}",
+        server.non_defaults()
+    );
+    server.shutdown().await;
+
+    // A tunnel with no credential in its route needs no opt-in.
+    let echo = tcp_echo().await;
+    let open = Tunnel::builder("127.0.0.1:0", &echo.to_string())
+        .unwrap()
+        .build();
+    let server = builder(Router::new()).tunnel(open).start().await.unwrap();
+    assert!(
+        server.non_defaults().is_empty(),
+        "{:?}",
+        server.non_defaults()
+    );
     server.shutdown().await;
 }

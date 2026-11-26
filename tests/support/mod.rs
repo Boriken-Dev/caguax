@@ -270,8 +270,53 @@ pub async fn read_response(stream: &mut TcpStream) -> (String, String) {
     (head, String::from_utf8_lossy(&body).into_owned())
 }
 
-/// One exchange on a fresh connection: sends `request`, reads to the end.
+/// The login every test server asks for.
+pub const TEST_USER: &str = "caguax";
+pub const TEST_PASSWORD: &str = "test-password";
+/// `curl -U` form of the test login.
+pub const TEST_LOGIN: &str = "caguax:test-password";
+
+pub fn test_login() -> caguax::Login {
+    caguax::Login::new(TEST_USER, TEST_PASSWORD).unwrap()
+}
+
+pub fn test_auth() -> caguax::Auth {
+    caguax::Auth::Login(test_login())
+}
+
+/// Default settings with the test login.
+pub fn test_settings() -> caguax::ServerSettings {
+    let mut settings = caguax::ServerSettings::default();
+    settings.auth = test_auth();
+    settings
+}
+
+/// The `Proxy-Authorization` header line of the test login, ending in a line break.
+pub fn auth_header() -> String {
+    format!("Proxy-Authorization: {}\r\n", test_login().header_value())
+}
+
+/// Adds the test login after the request line, unless the request carries a login already.
+fn with_login(request: &str) -> String {
+    if request
+        .to_ascii_lowercase()
+        .contains("proxy-authorization:")
+    {
+        return request.to_owned();
+    }
+    match request.split_once("\r\n") {
+        Some((line, rest)) => format!("{line}\r\n{}{rest}", auth_header()),
+        None => request.to_owned(),
+    }
+}
+
+/// One exchange on a fresh connection with the test login: see [`exchange_raw`].
 pub async fn exchange(proxy: SocketAddr, request: &str) -> (String, String) {
+    exchange_raw(proxy, &with_login(request)).await
+}
+
+/// One exchange on a fresh connection: sends `request` as it is, reads to the end.
+pub async fn exchange_raw(proxy: SocketAddr, request: &str) -> (String, String) {
     let mut stream = TcpStream::connect(proxy).await.unwrap();
     stream.write_all(request.as_bytes()).await.unwrap();
     // Until the proxy closes, or goes quiet after answering.
@@ -310,7 +355,13 @@ pub async fn get_through(proxy: SocketAddr, target: &str, extra: &str) -> (Strin
 pub async fn connect_through(proxy: SocketAddr, target: &str) -> (TcpStream, String) {
     let mut stream = TcpStream::connect(proxy).await.unwrap();
     stream
-        .write_all(format!("CONNECT {target} HTTP/1.1\r\nHost: {target}\r\n\r\n").as_bytes())
+        .write_all(
+            format!(
+                "CONNECT {target} HTTP/1.1\r\nHost: {target}\r\n{}\r\n",
+                auth_header()
+            )
+            .as_bytes(),
+        )
         .await
         .unwrap();
     let head = read_head(&mut stream).await.expect("an answer to CONNECT");
@@ -344,4 +395,43 @@ pub fn proxied(text: &str) -> caguax::Egress {
 pub async fn dead_address() -> SocketAddr {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     listener.local_addr().unwrap()
+}
+
+/// A TCP origin that answers every request `200` and records each request head it receives and
+/// each connection it accepts.
+pub struct LoggedOrigin {
+    pub address: SocketAddr,
+    pub heads: Arc<Mutex<Vec<String>>>,
+    pub connections: Arc<std::sync::atomic::AtomicUsize>,
+}
+
+pub async fn logged_origin() -> LoggedOrigin {
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let address = listener.local_addr().unwrap();
+    let heads = Arc::new(Mutex::new(Vec::new()));
+    let connections = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let (seen, count) = (Arc::clone(&heads), Arc::clone(&connections));
+    tokio::spawn(async move {
+        loop {
+            let Ok((mut stream, _)) = listener.accept().await else {
+                return;
+            };
+            count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            let seen = Arc::clone(&seen);
+            tokio::spawn(async move {
+                while let Some(head) = read_head(&mut stream).await {
+                    seen.lock().unwrap().push(head);
+                    let reply = b"HTTP/1.1 200 OK\r\ncontent-length: 2\r\n\r\nok";
+                    if stream.write_all(reply).await.is_err() {
+                        return;
+                    }
+                }
+            });
+        }
+    });
+    LoggedOrigin {
+        address,
+        heads,
+        connections,
+    }
 }

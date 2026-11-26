@@ -1,4 +1,33 @@
 pub mod caguax
+pub mod caguax::auth
+#[non_exhaustive] pub enum caguax::auth::Auth
+pub caguax::auth::Auth::Env
+pub caguax::auth::Auth::Env::name: alloc::string::String
+pub caguax::auth::Auth::Env::user: alloc::string::String
+pub caguax::auth::Auth::File
+pub caguax::auth::Auth::File::path: std::path::PathBuf
+pub caguax::auth::Auth::File::user: alloc::string::String
+pub caguax::auth::Auth::Generated
+pub caguax::auth::Auth::Generated::file: core::option::Option<std::path::PathBuf>
+pub caguax::auth::Auth::Generated::user: alloc::string::String
+pub caguax::auth::Auth::Login(caguax::auth::Login)
+pub caguax::auth::Auth::None
+impl caguax::auth::Auth
+pub fn caguax::auth::Auth::is_none(&self) -> bool
+impl core::default::Default for caguax::auth::Auth
+pub fn caguax::auth::Auth::default() -> Self
+impl<'de> serde_core::de::Deserialize<'de> for caguax::auth::Auth
+pub fn caguax::auth::Auth::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
+pub struct caguax::auth::Login
+impl caguax::auth::Login
+pub fn caguax::auth::Login::header_value(&self) -> alloc::string::String
+pub fn caguax::auth::Login::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> caguax::error::Result<Self>
+pub fn caguax::auth::Login::password(&self) -> &str
+pub fn caguax::auth::Login::user(&self) -> &str
+pub fn caguax::auth::Login::userinfo(&self) -> alloc::string::String
+impl core::fmt::Debug for caguax::auth::Login
+pub fn caguax::auth::Login::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+pub const caguax::auth::DEFAULT_USER: &str
 pub mod caguax::blocking
 pub struct caguax::blocking::Server
 impl caguax::server::blocking::Server
@@ -614,6 +643,7 @@ pub fn caguax::server::Server::interceptor(&self) -> core::option::Option<alloc:
 pub fn caguax::server::Server::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
 pub async fn caguax::server::Server::open_upstream(&self, &caguax::connection::Connection, &caguax::route::Route, caguax::server::OpenOptions) -> caguax::error::Result<caguax::upstream::UpstreamStream>
 pub fn caguax::server::Server::port(&self) -> u16
+pub fn caguax::server::Server::proxy_login(&self) -> core::option::Option<caguax::auth::Login>
 pub fn caguax::server::Server::recorders(&self) -> alloc::vec::Vec<alloc::sync::Arc<dyn caguax::record::Recorder>>
 pub async fn caguax::server::Server::relay_session<C>(&self, &caguax::connection::Connection, &caguax::route::Route, C, caguax::upstream::UpstreamStream, caguax::server::RelaySession) where C: tokio::io::async_read::AsyncRead + tokio::io::async_write::AsyncWrite + core::marker::Unpin + core::marker::Send
 pub async fn caguax::server::Server::reload(&self, caguax::settings::ServerSettings, impl caguax::route::Routing + 'static) -> caguax::error::Result<()>
@@ -631,6 +661,7 @@ pub fn caguax::server::Server::drop(&mut self)
 pub struct caguax::server::ServerBuilder
 impl caguax::server::ServerBuilder
 pub fn caguax::server::ServerBuilder::allow_remote(self, bool) -> Self
+pub fn caguax::server::ServerBuilder::auth(self, caguax::auth::Auth) -> Self
 pub fn caguax::server::ServerBuilder::ca(self, coqui_sslcontext::issue::CertificateAuthority) -> caguax::error::Result<Self>
 pub fn caguax::server::ServerBuilder::egress(self, caguax::upstream::Egress) -> Self
 pub fn caguax::server::ServerBuilder::interceptor(self, caguax::intercept::Interceptor) -> Self
@@ -646,6 +677,7 @@ impl core::fmt::Debug for caguax::server::ServerBuilder
 pub fn caguax::server::ServerBuilder::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 pub struct caguax::server::Tunnel
 impl caguax::Tunnel
+pub fn caguax::Tunnel::allow_any_local(&self) -> bool
 pub fn caguax::Tunnel::builder(&str, &str) -> caguax::error::Result<caguax::TunnelBuilder>
 pub fn caguax::Tunnel::listen(&self) -> caguax::listen::ListenAddr
 pub fn caguax::Tunnel::name(&self) -> &str
@@ -656,6 +688,7 @@ impl core::convert::From<caguax::TunnelBuilder> for caguax::Tunnel
 pub fn caguax::Tunnel::from(caguax::TunnelBuilder) -> Self
 pub struct caguax::server::TunnelBuilder
 impl caguax::TunnelBuilder
+pub fn caguax::TunnelBuilder::allow_any_local(self, bool) -> Self
 pub fn caguax::TunnelBuilder::build(self) -> caguax::Tunnel
 pub fn caguax::TunnelBuilder::name(self, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn caguax::TunnelBuilder::route(self, impl core::convert::Into<caguax::route::Route>) -> Self
@@ -681,6 +714,7 @@ pub fn caguax::settings::InterceptSettings::default() -> Self
 #[non_exhaustive] pub struct caguax::settings::ServerSettings
 pub caguax::settings::ServerSettings::accept_error_delay: core::time::Duration
 pub caguax::settings::ServerSettings::allow_remote: bool
+pub caguax::settings::ServerSettings::auth: caguax::auth::Auth
 pub caguax::settings::ServerSettings::ca: caguax::settings::CaSettings
 pub caguax::settings::ServerSettings::close_timeout: core::time::Duration
 pub caguax::settings::ServerSettings::connect_timeout: core::time::Duration
@@ -700,6 +734,7 @@ pub caguax::settings::ServerSettings::record: core::option::Option<std::path::Pa
 pub caguax::settings::ServerSettings::relay_buffer: usize
 pub caguax::settings::ServerSettings::warn_interval: core::time::Duration
 impl caguax::settings::ServerSettings
+pub const caguax::settings::ServerSettings::DEFAULT_IDLE_TIMEOUT: core::time::Duration
 pub fn caguax::settings::ServerSettings::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
 pub fn caguax::settings::ServerSettings::validate(&self) -> caguax::error::Result<()>
 impl core::default::Default for caguax::settings::ServerSettings
@@ -765,6 +800,24 @@ pub fn caguax::route::Action::fmt(&self, &mut core::fmt::Formatter<'_>) -> core:
 impl core::str::traits::FromStr for caguax::route::Action
 pub type caguax::route::Action::Err = caguax::error::Error
 pub fn caguax::route::Action::from_str(&str) -> caguax::error::Result<Self>
+#[non_exhaustive] pub enum caguax::Auth
+pub caguax::Auth::Env
+pub caguax::Auth::Env::name: alloc::string::String
+pub caguax::Auth::Env::user: alloc::string::String
+pub caguax::Auth::File
+pub caguax::Auth::File::path: std::path::PathBuf
+pub caguax::Auth::File::user: alloc::string::String
+pub caguax::Auth::Generated
+pub caguax::Auth::Generated::file: core::option::Option<std::path::PathBuf>
+pub caguax::Auth::Generated::user: alloc::string::String
+pub caguax::Auth::Login(caguax::auth::Login)
+pub caguax::Auth::None
+impl caguax::auth::Auth
+pub fn caguax::auth::Auth::is_none(&self) -> bool
+impl core::default::Default for caguax::auth::Auth
+pub fn caguax::auth::Auth::default() -> Self
+impl<'de> serde_core::de::Deserialize<'de> for caguax::auth::Auth
+pub fn caguax::auth::Auth::deserialize<D: serde_core::de::Deserializer<'de>>(D) -> core::result::Result<Self, <D as serde_core::de::Deserializer>::Error>
 #[non_exhaustive] pub enum caguax::Backend
 pub caguax::Backend::Cng
 pub caguax::Backend::Keychain
@@ -1021,6 +1074,15 @@ pub fn caguax::listen::ListenAddr::fmt(&self, &mut core::fmt::Formatter<'_>) -> 
 impl core::str::traits::FromStr for caguax::listen::ListenAddr
 pub type caguax::listen::ListenAddr::Err = caguax::error::Error
 pub fn caguax::listen::ListenAddr::from_str(&str) -> caguax::error::Result<Self>
+pub struct caguax::Login
+impl caguax::auth::Login
+pub fn caguax::auth::Login::header_value(&self) -> alloc::string::String
+pub fn caguax::auth::Login::new(impl core::convert::Into<alloc::string::String>, impl core::convert::Into<alloc::string::String>) -> caguax::error::Result<Self>
+pub fn caguax::auth::Login::password(&self) -> &str
+pub fn caguax::auth::Login::user(&self) -> &str
+pub fn caguax::auth::Login::userinfo(&self) -> alloc::string::String
+impl core::fmt::Debug for caguax::auth::Login
+pub fn caguax::auth::Login::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 #[non_exhaustive] pub struct caguax::OpenOptions
 pub caguax::OpenOptions::forward_http: bool
 pub struct caguax::RejectedError
@@ -1091,6 +1153,7 @@ pub fn caguax::server::Server::interceptor(&self) -> core::option::Option<alloc:
 pub fn caguax::server::Server::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
 pub async fn caguax::server::Server::open_upstream(&self, &caguax::connection::Connection, &caguax::route::Route, caguax::server::OpenOptions) -> caguax::error::Result<caguax::upstream::UpstreamStream>
 pub fn caguax::server::Server::port(&self) -> u16
+pub fn caguax::server::Server::proxy_login(&self) -> core::option::Option<caguax::auth::Login>
 pub fn caguax::server::Server::recorders(&self) -> alloc::vec::Vec<alloc::sync::Arc<dyn caguax::record::Recorder>>
 pub async fn caguax::server::Server::relay_session<C>(&self, &caguax::connection::Connection, &caguax::route::Route, C, caguax::upstream::UpstreamStream, caguax::server::RelaySession) where C: tokio::io::async_read::AsyncRead + tokio::io::async_write::AsyncWrite + core::marker::Unpin + core::marker::Send
 pub async fn caguax::server::Server::reload(&self, caguax::settings::ServerSettings, impl caguax::route::Routing + 'static) -> caguax::error::Result<()>
@@ -1108,6 +1171,7 @@ pub fn caguax::server::Server::drop(&mut self)
 pub struct caguax::ServerBuilder
 impl caguax::server::ServerBuilder
 pub fn caguax::server::ServerBuilder::allow_remote(self, bool) -> Self
+pub fn caguax::server::ServerBuilder::auth(self, caguax::auth::Auth) -> Self
 pub fn caguax::server::ServerBuilder::ca(self, coqui_sslcontext::issue::CertificateAuthority) -> caguax::error::Result<Self>
 pub fn caguax::server::ServerBuilder::egress(self, caguax::upstream::Egress) -> Self
 pub fn caguax::server::ServerBuilder::interceptor(self, caguax::intercept::Interceptor) -> Self
@@ -1124,6 +1188,7 @@ pub fn caguax::server::ServerBuilder::fmt(&self, &mut core::fmt::Formatter<'_>) 
 #[non_exhaustive] pub struct caguax::ServerSettings
 pub caguax::ServerSettings::accept_error_delay: core::time::Duration
 pub caguax::ServerSettings::allow_remote: bool
+pub caguax::ServerSettings::auth: caguax::auth::Auth
 pub caguax::ServerSettings::ca: caguax::settings::CaSettings
 pub caguax::ServerSettings::close_timeout: core::time::Duration
 pub caguax::ServerSettings::connect_timeout: core::time::Duration
@@ -1143,6 +1208,7 @@ pub caguax::ServerSettings::record: core::option::Option<std::path::PathBuf>
 pub caguax::ServerSettings::relay_buffer: usize
 pub caguax::ServerSettings::warn_interval: core::time::Duration
 impl caguax::settings::ServerSettings
+pub const caguax::settings::ServerSettings::DEFAULT_IDLE_TIMEOUT: core::time::Duration
 pub fn caguax::settings::ServerSettings::non_defaults(&self) -> alloc::vec::Vec<alloc::string::String>
 pub fn caguax::settings::ServerSettings::validate(&self) -> caguax::error::Result<()>
 impl core::default::Default for caguax::settings::ServerSettings
@@ -1158,6 +1224,7 @@ pub fn caguax::record::Session::server(&self) -> core::option::Option<core::net:
 pub fn caguax::record::Session::started(&self) -> std::time::SystemTime
 pub struct caguax::Tunnel
 impl caguax::Tunnel
+pub fn caguax::Tunnel::allow_any_local(&self) -> bool
 pub fn caguax::Tunnel::builder(&str, &str) -> caguax::error::Result<caguax::TunnelBuilder>
 pub fn caguax::Tunnel::listen(&self) -> caguax::listen::ListenAddr
 pub fn caguax::Tunnel::name(&self) -> &str
@@ -1168,6 +1235,7 @@ impl core::convert::From<caguax::TunnelBuilder> for caguax::Tunnel
 pub fn caguax::Tunnel::from(caguax::TunnelBuilder) -> Self
 pub struct caguax::TunnelBuilder
 impl caguax::TunnelBuilder
+pub fn caguax::TunnelBuilder::allow_any_local(self, bool) -> Self
 pub fn caguax::TunnelBuilder::build(self) -> caguax::Tunnel
 pub fn caguax::TunnelBuilder::name(self, impl core::convert::Into<alloc::string::String>) -> Self
 pub fn caguax::TunnelBuilder::route(self, impl core::convert::Into<caguax::route::Route>) -> Self

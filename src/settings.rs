@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use serde::de::{self, Deserializer};
 
+use crate::auth::Auth;
 use crate::error::{Result, config};
 use crate::listen::ListenAddr;
 use crate::upstream::Egress;
@@ -68,9 +69,10 @@ fn de_duration<'de, D: Deserializer<'de>>(
 fn de_optional_duration<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> core::result::Result<Option<Duration>, D::Error> {
-    Option::<Seconds>::deserialize(deserializer)?
+    Ok(Option::<Seconds>::deserialize(deserializer)?
         .map(duration_of)
-        .transpose()
+        .transpose()?
+        .filter(|value| !value.is_zero()))
 }
 
 #[derive(Deserialize)]
@@ -183,7 +185,13 @@ pub struct ServerSettings {
     /// (default 30 s; the config key `timeout` is the same setting).
     #[serde(alias = "timeout", deserialize_with = "de_duration")]
     pub connect_timeout: Duration,
-    /// Ends a relayed direction that stays silent that long (default none).
+    /// Whether the HTTP proxy listener asks for a login, and which (default: required, with a
+    /// password generated when the server starts). `none` is listed by
+    /// [`non_defaults`](Self::non_defaults): any local process then uses the proxy's credentials.
+    pub auth: Auth,
+    /// Ends a relayed direction that stays silent that long, so a silent connection cannot hold
+    /// one of `max_connections` for ever (default 5 minutes; `0` or `None` never ends one, which
+    /// [`non_defaults`](Self::non_defaults) lists).
     #[serde(deserialize_with = "de_optional_duration")]
     pub idle_timeout: Option<Duration>,
     /// Bounds the wait for a peer's reply to a TLS shutdown before the connection is dropped
@@ -236,7 +244,8 @@ impl Default for ServerSettings {
             listen: alloc::vec![ListenAddr::loopback()],
             allow_remote: false,
             connect_timeout: Duration::from_secs(30),
-            idle_timeout: None,
+            auth: Auth::default(),
+            idle_timeout: Some(Self::DEFAULT_IDLE_TIMEOUT),
             close_timeout: Duration::from_secs(2),
             listen_backlog: 128,
             max_connections: 1024,
@@ -258,6 +267,9 @@ impl Default for ServerSettings {
 }
 
 impl ServerSettings {
+    /// The default `idle_timeout`: 5 minutes.
+    pub const DEFAULT_IDLE_TIMEOUT: Duration = Duration::from_secs(300);
+
     /// Refuses the values that mean nothing: a zero timeout, count or size.
     ///
     /// # Errors
@@ -305,12 +317,18 @@ impl ServerSettings {
         Ok(())
     }
 
-    /// What is looser than the defaults, as `setting = value` text: listening beyond loopback and
-    /// a key log.
+    /// What is looser than the defaults, as `setting = value` text: listening beyond loopback, no
+    /// listener login, no idle timeout and a key log.
     pub fn non_defaults(&self) -> Vec<String> {
         let mut found = Vec::new();
         if self.allow_remote {
             found.push("server.allow_remote = true".into());
+        }
+        if self.auth.is_none() {
+            found.push("server.auth = none".into());
+        }
+        if self.idle_timeout.is_none() {
+            found.push("server.idle_timeout = none".into());
         }
         if self.keylog.is_some() {
             found.push("server.keylog = (a file of TLS secrets)".into());

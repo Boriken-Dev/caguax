@@ -11,6 +11,7 @@
 
 extern crate alloc;
 
+pub mod auth;
 #[cfg(feature = "cli")]
 #[cfg_attr(docsrs, doc(cfg(feature = "cli")))]
 pub mod cli;
@@ -18,6 +19,7 @@ pub mod config;
 pub mod connection;
 pub mod credential;
 pub mod error;
+mod fileio;
 pub mod intercept;
 pub mod keylog;
 pub mod listen;
@@ -29,6 +31,7 @@ pub mod server;
 pub mod settings;
 pub mod upstream;
 
+pub use auth::{Auth, Login};
 pub use connection::{Connection, ConnectionBuilder, LISTENER, Scheme};
 pub use credential::{Backend, Credential, CredentialBuilder, KeystoreOptions, StoreLocation};
 pub use error::{

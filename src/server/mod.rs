@@ -26,8 +26,10 @@ use tokio::net::{TcpListener, TcpSocket, TcpStream};
 use tokio::sync::{mpsc, watch};
 
 pub use relay::{IdleRead, RelayOptions, relay};
+pub(crate) use tunnel::check_credentials as check_tunnel_credentials;
 pub use tunnel::{Tunnel, TunnelBuilder};
 
+use crate::auth::{Auth, Login};
 use crate::connection::Connection;
 use crate::error::{Result, config};
 use crate::intercept::{Interceptor, load_ca};
@@ -66,12 +68,16 @@ pub(crate) struct State {
     pub(crate) connect: ConnectOptions,
     pub(crate) interceptor: Option<Arc<Interceptor>>,
     pub(crate) recorders: Vec<Arc<dyn Recorder>>,
+    /// What a request to the HTTP proxy listener must present; `None` asks for nothing.
+    pub(crate) login: Option<Arc<Login>>,
 }
 
 /// What the builder was given in code, kept so a reload can keep it.
 struct Given {
     interceptor: Option<Arc<Interceptor>>,
     recorders: Vec<Arc<dyn Recorder>>,
+    /// The generated listener login, kept so a reload does not change it.
+    generated: Mutex<Option<Login>>,
 }
 
 pub(crate) struct Inner {
@@ -246,6 +252,12 @@ impl ServerBuilder {
         self
     }
 
+    /// Whether the HTTP proxy listener asks for a login, and which.
+    pub fn auth(mut self, auth: Auth) -> Self {
+        self.settings.auth = auth;
+        self
+    }
+
     /// Allows listening beyond loopback.
     pub fn allow_remote(mut self, allow: bool) -> Self {
         self.settings.allow_remote = allow;
@@ -321,8 +333,10 @@ impl ServerBuilder {
         let given = Given {
             interceptor: interceptor.map(Arc::new),
             recorders,
+            generated: Mutex::new(None),
         };
         let state = build_state(router, settings, &given).await?;
+        tunnel::check_credentials(tunnels.iter(), state.router.as_ref(), &state.settings)?;
         let mut proxy_sockets = Vec::new();
         for address in &state.settings.listen {
             proxy_sockets.push(bind(*address, state.settings.listen_backlog)?);
@@ -421,12 +435,24 @@ async fn build_state(
     if let Some(path) = &settings.record {
         recorders.push(pcap_recorder(path)?);
     }
+    let login = {
+        let mut kept = given
+            .generated
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let login = settings.auth.resolve(kept.as_ref())?;
+        if matches!(settings.auth, Auth::Generated { .. }) {
+            kept.clone_from(&login);
+        }
+        login
+    };
     Ok(State {
         router,
         settings,
         connect,
         interceptor,
         recorders,
+        login: login.map(Arc::new),
     })
 }
 
@@ -619,7 +645,21 @@ impl Server {
         if let Some(router) = state.router.router() {
             found.extend(crate::config::router_non_defaults(router));
         }
+        for (tunnel, _) in &self.inner.tunnels {
+            if tunnel.allow_any_local() {
+                found.push(alloc::format!(
+                    "tunnels.{}.allow_any_local = true",
+                    tunnel.name()
+                ));
+            }
+        }
         found
+    }
+
+    /// The login the HTTP proxy listener asks for (the generated one included), or `None` with
+    /// `server.auth = "none"`. The password is a secret: hand it to the client, never log it.
+    pub fn proxy_login(&self) -> Option<Login> {
+        self.inner.state().login.as_deref().cloned()
     }
 
     /// [`ConnectOptions`]-based connect with this server's egress, timeout and key log.
@@ -693,6 +733,11 @@ impl Server {
             ));
         }
         let state = build_state(Arc::new(router), settings, &self.inner.given).await?;
+        tunnel::check_credentials(
+            self.inner.tunnels.iter().map(|(tunnel, _)| tunnel.as_ref()),
+            state.router.as_ref(),
+            &state.settings,
+        )?;
         *self
             .inner
             .state

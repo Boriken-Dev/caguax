@@ -2,9 +2,11 @@
 
 use clap::Args;
 
-use super::{Cli, Failure, Outcome, load_config, print_line};
-use crate::config::build_parts;
+use super::{Cli, Failure, Loaded, Outcome, load_config, print_line};
+use crate::auth::Auth;
+use crate::config::{self, build_parts};
 use crate::server::Server;
+use crate::settings::ServerSettings;
 
 /// `caguax run` takes no arguments of its own: the configuration file says what to serve.
 #[derive(Debug, Args)]
@@ -60,9 +62,28 @@ impl Hangups {
     }
 }
 
+/// Where a generated listener login goes when the configuration names no file: `caguax.auth`
+/// beside the configuration file (or where the default one would be).
+fn with_login_file(settings: &mut ServerSettings, loaded: &Loaded) {
+    if let Auth::Generated {
+        file: file @ None, ..
+    } = &mut settings.auth
+    {
+        let beside = loaded.path.clone().unwrap_or_else(config::default_path);
+        *file = Some(beside.with_file_name(LOGIN_FILE));
+    }
+}
+
+const LOGIN_FILE: &str = "caguax.auth";
+
 pub(super) async fn run(cli: &Cli, _args: &RunArgs) -> Outcome {
     let loaded = load_config(cli)?;
-    let parts = build_parts(&loaded.document, loaded.build_options())?;
+    let mut parts = build_parts(&loaded.document, loaded.build_options())?;
+    with_login_file(&mut parts.settings, &loaded);
+    let login_file = match &parts.settings.auth {
+        Auth::Generated { file, .. } => file.clone(),
+        _ => None,
+    };
     let server = Server::builder(parts.router)
         .settings(parts.settings)
         .tunnels(parts.tunnels)
@@ -73,6 +94,9 @@ pub(super) async fn run(cli: &Cli, _args: &RunArgs) -> Outcome {
             "proxy http://{}",
             crate::connection::join_host(&address.ip().to_string(), address.port())
         ))?;
+    }
+    if let Some(file) = login_file {
+        print_line(&alloc::format!("login {}", file.display()))?;
     }
     for (tunnel, address) in server.tunnels() {
         print_line(&alloc::format!("tunnel {address} -> {}", tunnel.target()))?;
@@ -107,7 +131,8 @@ pub(super) async fn run(cli: &Cli, _args: &RunArgs) -> Outcome {
 
 async fn reload(cli: &Cli, server: &Server) -> Outcome {
     let loaded = load_config(cli)?;
-    let parts = build_parts(&loaded.document, loaded.build_options())?;
+    let mut parts = build_parts(&loaded.document, loaded.build_options())?;
+    with_login_file(&mut parts.settings, &loaded);
     server.reload(parts.settings, parts.router).await?;
     Ok(())
 }

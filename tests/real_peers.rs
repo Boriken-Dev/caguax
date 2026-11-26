@@ -8,7 +8,7 @@ use std::net::SocketAddr;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 
-use caguax::{Route, Router, Rule, Server, ServerSettings};
+use caguax::{Route, Router, Rule, Server};
 use support::*;
 
 fn enabled(variable: &str) -> bool {
@@ -66,6 +66,7 @@ async fn curl_through_the_proxy_plain_connect_and_intercepted() {
     std::fs::write(&proxy_ca, ca.certificate_pem()).unwrap();
     std::fs::write(&origin_ca, pki.ca.certificate_pem()).unwrap();
     let server = Server::builder(router)
+        .auth(test_auth())
         .ca(ca)
         .unwrap()
         .start()
@@ -76,6 +77,8 @@ async fn curl_through_the_proxy_plain_connect_and_intercepted() {
     let (ok, body) = run_curl(vec![
         "-x".into(),
         proxy.clone(),
+        "-U".into(),
+        TEST_LOGIN.into(),
         format!("http://127.0.0.1:{}/plain", plain.port()),
     ])
     .await;
@@ -84,6 +87,8 @@ async fn curl_through_the_proxy_plain_connect_and_intercepted() {
     let (ok, body) = run_curl(vec![
         "-x".into(),
         proxy.clone(),
+        "-U".into(),
+        TEST_LOGIN.into(),
         "--cacert".into(),
         text(&origin_ca),
         format!("https://127.0.0.1:{}/connect", tls.port()),
@@ -94,6 +99,8 @@ async fn curl_through_the_proxy_plain_connect_and_intercepted() {
     let (ok, body) = run_curl(vec![
         "-x".into(),
         proxy.clone(),
+        "-U".into(),
+        TEST_LOGIN.into(),
         "--cacert".into(),
         text(&proxy_ca),
         format!("https://localhost:{}/intercepted", mtls.port()),
@@ -145,7 +152,7 @@ async fn an_upstream_squid_carries_connect_and_forwarded_requests() {
     }
     let echo = tcp_echo().await;
     let origin = echo_origin(None).await;
-    let mut settings = ServerSettings::default();
+    let mut settings = test_settings();
     settings.egress = Some(proxied(&format!("http://{address}")));
     let server = Server::builder(Router::new())
         .settings(settings)

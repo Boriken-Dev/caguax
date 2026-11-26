@@ -32,6 +32,7 @@ use coqui_sslcontext::{IdentityQuery, KeyPassword, Pin, PinAnswer, Secret, TlsVe
 use serde::Deserialize;
 use serde_json::{Map, Value};
 
+use crate::auth::Auth;
 use crate::connection::Connection;
 use crate::credential::{Backend, Credential, KeystoreOptions, StoreLocation};
 use crate::error::{ConfigError, Error, Result};
@@ -210,6 +211,9 @@ pub struct TunnelSpec {
     upstream: Option<String>,
     #[serde(default)]
     name: Option<String>,
+    /// Lets any local process use a tunnel whose route carries a credential (default false).
+    #[serde(default)]
+    allow_any_local: bool,
 }
 
 /// A configuration document: the `[server]`, `[credentials.*]`, `[[rules]]`, `[default]` and
@@ -995,7 +999,7 @@ impl Builder<'_> {
             if let Some(name) = &spec.name {
                 builder = builder.name(name.clone());
             }
-            built.push(builder.build());
+            built.push(builder.allow_any_local(spec.allow_any_local).build());
         }
         Ok(built)
     }
@@ -1006,6 +1010,15 @@ impl Builder<'_> {
             if let Some(path) = slot.take() {
                 *slot = Some(self.path(&path));
             }
+        }
+        match &mut settings.auth {
+            Auth::Generated {
+                file: Some(path), ..
+            }
+            | Auth::File { path, .. } => {
+                *path = self.path(path);
+            }
+            _ => {}
         }
         for slot in [&mut settings.ca.certificate, &mut settings.ca.key] {
             if let Some(path) = slot.take() {
@@ -1106,6 +1119,8 @@ pub fn build_parts(document: &Document, options: BuildOptions) -> Result<Parts> 
     let router = builder.router(&credentials)?;
     let tunnels = builder.tunnels(&credentials)?;
     let settings = builder.settings()?;
+    crate::server::check_tunnel_credentials(tunnels.iter(), &router, &settings)
+        .map_err(|error| ConfigError::new(error.to_string()).at_path(builder.label.clone()))?;
     Ok(Parts {
         settings,
         router,

@@ -9,8 +9,8 @@ use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt as _, Empty, Full};
 use hyper::body::Incoming;
 use hyper::header::{
-    CONNECTION, CONTENT_TYPE, HOST, HeaderMap, HeaderName, HeaderValue, PROXY_AUTHORIZATION,
-    TRANSFER_ENCODING, UPGRADE,
+    CONNECTION, CONTENT_TYPE, HOST, HeaderMap, HeaderName, HeaderValue, PROXY_AUTHENTICATE,
+    PROXY_AUTHORIZATION, TRANSFER_ENCODING, UPGRADE,
 };
 use hyper::{Method, Request, Response, StatusCode, Uri, Version};
 use hyper_util::rt::TokioIo;
@@ -124,10 +124,39 @@ fn head_size(request: &Request<Incoming>) -> usize {
     })
 }
 
+/// `407`, closing the connection: the client must present the listener's login.
+fn login_required() -> Response<Body> {
+    let mut response = text(
+        StatusCode::PROXY_AUTHENTICATION_REQUIRED,
+        "this proxy needs a login (Proxy-Authorization: Basic)\n",
+    );
+    let headers = response.headers_mut();
+    headers.insert(
+        PROXY_AUTHENTICATE,
+        HeaderValue::from_static("Basic realm=\"caguax\""),
+    );
+    headers.insert(CONNECTION, HeaderValue::from_static("close"));
+    response
+}
+
 pub(super) async fn handle(client: ClientConnection, request: Request<Incoming>) -> Response<Body> {
-    if head_size(&request) > client.inner.state().settings.max_head_bytes {
+    let state = client.inner.state();
+    if head_size(&request) > state.settings.max_head_bytes {
         return text(StatusCode::BAD_REQUEST, "request head too large\n");
     }
+    if let Some(login) = &state.login
+        && !login.accepts_any(
+            request
+                .headers()
+                .get_all(PROXY_AUTHORIZATION)
+                .iter()
+                .map(HeaderValue::as_bytes),
+        )
+    {
+        tracing::info!(target: "caguax", peer = %client.peer, "refused: no valid proxy login");
+        return login_required();
+    }
+    drop(state);
     if request.method() == Method::CONNECT {
         return connect_request(client, request).await;
     }
