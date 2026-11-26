@@ -224,7 +224,9 @@ The HTTP proxy listener:
   absolute form with the upstream's `Proxy-Authorization`. `Upgrade` (WebSocket) traffic is
   relayed as bytes. Several requests share a client connection (`keep_alive`), each routed on its
   own; 1xx interim responses other than `101` are not passed on.
-- **`GET /proxy.pac`** (origin form, to the proxy itself): the PAC script; other local paths `404`.
+- **`GET /proxy.pac`** (origin form, to the proxy itself): the PAC script, only when `Host` is an IP
+  literal, `localhost` or a name in `server.pac_hosts` (else `421`, so a page that rebinds its own
+  name to the proxy cannot read the rules); other local paths `404`.
 - Statuses: `407` no valid listener login, `400` malformed request or head over `max_head_bytes`, `403` rejected, `502`
   destination or upstream unreachable or credential unavailable (the body says which, never a
   secret), `504` timeout waiting for the destination's answer.
@@ -260,12 +262,13 @@ keys are errors; a duration is seconds or `"500ms"`, `"30s"`, `"2m"`, `"1h"`, `"
 | `ca.certificate`, `ca.key`, `ca.password_env`, `ca.validity` | none, none, none, 3650 days |
 | `intercept.leaf_cache_capacity`, `intercept.leaf_validity` | 256, 7 days |
 | `relay_buffer` | 64 KiB |
+| `pac_hosts` | none (IP literals and `localhost` are always served) |
 | `keep_alive` | true |
 | `happy_eyeballs_delay` | 250 ms |
 | `warn_interval`, `accept_error_delay` | 10 s, 100 ms |
 
 `validate` refuses a zero timeout, count or size (those mean nothing). `non_defaults()` lists
-`allow_remote`, `auth = none`, `idle_timeout = none`, `keylog`, `record` and a `ca.key` with no
+`allow_remote`, `auth = none`, `idle_timeout = none`, `keylog`, `record`, `pac_hosts` and a `ca.key` with no
 `ca.password_env` (an unencrypted key); `Server::non_defaults()` adds a
 CA that is not name-constrained, credentials with `verify = false` and each
 `tunnels.<name>.allow_any_local = true`.

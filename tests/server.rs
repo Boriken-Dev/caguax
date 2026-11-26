@@ -172,7 +172,7 @@ async fn the_pac_file_and_other_local_paths() {
     let proxy = server.addresses()[0];
     let (head, body) = exchange(
         proxy,
-        "GET /proxy.pac HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n",
+        "GET /proxy.pac HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
     )
     .await;
     assert_eq!(status(&head), 200, "{head}");
@@ -192,7 +192,7 @@ async fn the_pac_file_and_other_local_paths() {
     assert_eq!(status(&head), 404);
     let (head, _) = exchange(
         proxy,
-        "POST /proxy.pac HTTP/1.1\r\nHost: x\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+        "POST /proxy.pac HTTP/1.1\r\nHost: 127.0.0.1\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
     )
     .await;
     assert_eq!(status(&head), 404);
@@ -644,7 +644,7 @@ async fn bounds_are_settings() {
     // The second connection finds no room and is closed without an answer.
     let mut second = TcpStream::connect(proxy).await.unwrap();
     second
-        .write_all(b"GET /proxy.pac HTTP/1.1\r\nHost: x\r\n\r\n")
+        .write_all(b"GET /proxy.pac HTTP/1.1\r\nHost: 127.0.0.1\r\n\r\n")
         .await
         .unwrap();
     let mut answer = Vec::new();
@@ -658,7 +658,7 @@ async fn bounds_are_settings() {
     // With room again, an oversize request head is refused.
     eventually_accepts(proxy).await;
     let big = format!(
-        "GET /proxy.pac HTTP/1.1\r\nHost: x\r\nX-Pad: {}\r\n\r\n",
+        "GET /proxy.pac HTTP/1.1\r\nHost: 127.0.0.1\r\nX-Pad: {}\r\n\r\n",
         "a".repeat(20_000)
     );
     let (head, _) = exchange(proxy, &big).await;
@@ -670,7 +670,7 @@ async fn eventually_accepts(proxy: SocketAddr) {
     for _ in 0..100 {
         let (head, _) = exchange(
             proxy,
-            "GET /proxy.pac HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n",
+            "GET /proxy.pac HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
         )
         .await;
         if head.starts_with("HTTP/1.1 200") {
@@ -858,7 +858,7 @@ fn the_blocking_server_runs_on_its_own_runtime() {
     std::io::Write::write_all(
         &mut stream,
         format!(
-            "GET /proxy.pac HTTP/1.1\r\nHost: x\r\n{}Connection: close\r\n\r\n",
+            "GET /proxy.pac HTTP/1.1\r\nHost: 127.0.0.1\r\n{}Connection: close\r\n\r\n",
             auth_header()
         )
         .as_bytes(),
@@ -888,7 +888,7 @@ async fn a_custom_router_and_interceptor_work_through_the_traits() {
     assert_eq!(status(&head), 403);
     let (head, _) = exchange(
         server.addresses()[0],
-        "GET /proxy.pac HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n",
+        "GET /proxy.pac HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n",
     )
     .await;
     assert_eq!(
@@ -1055,7 +1055,7 @@ async fn a_password_file_names_the_login_and_an_unreadable_one_is_a_config_error
     let (head, _) = exchange(
         server.addresses()[0],
         &format!(
-            "GET /proxy.pac HTTP/1.1\r\nHost: x\r\nProxy-Authorization: {}\r\nConnection: close\r\n\r\n",
+            "GET /proxy.pac HTTP/1.1\r\nHost: 127.0.0.1\r\nProxy-Authorization: {}\r\nConnection: close\r\n\r\n",
             login.header_value()
         ),
     )
@@ -1284,6 +1284,54 @@ async fn a_reload_logs_every_non_default_it_loosened() {
             .all(|line| !line.starts_with("non-default")),
         "{:?}",
         logs.messages()
+    );
+    server.shutdown().await;
+}
+
+#[tokio::test]
+async fn the_pac_file_is_served_only_to_a_host_that_names_the_listener() {
+    let router = Router::builder()
+        .rule(rule("*.corp.internal.example", Route::reject()))
+        .build();
+    let mut settings = test_settings();
+    settings.pac_hosts = vec!["Pac.Corp.Example".into()];
+    let server = builder(router).settings(settings).start().await.unwrap();
+    let proxy = server.addresses()[0];
+    let get = |host: String| {
+        let request =
+            format!("GET /proxy.pac HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n");
+        async move { exchange(proxy, &request).await }
+    };
+
+    // A page that rebinds a name to the proxy's port sends its own name as Host.
+    let (head, body) = get(format!("rebind.example:{}", proxy.port())).await;
+    assert_eq!(status(&head), 421, "{head}");
+    assert!(
+        !body.contains("FindProxyForURL") && !body.contains("internal"),
+        "{body}"
+    );
+    let (head, _) = get("rebind.example".into()).await;
+    assert_eq!(status(&head), 421, "{head}");
+
+    // The positive controls: an IP literal, localhost, and a name the operator listed.
+    for host in [
+        format!("127.0.0.1:{}", proxy.port()),
+        "127.0.0.1".into(),
+        format!("localhost:{}", proxy.port()),
+        "LocalHost".into(),
+        format!("pac.corp.example:{}", proxy.port()),
+    ] {
+        let (head, body) = get(host.clone()).await;
+        assert_eq!(status(&head), 200, "{host}: {head}");
+        assert!(body.contains("FindProxyForURL"), "{host}: {body}");
+    }
+    assert!(
+        server
+            .non_defaults()
+            .iter()
+            .any(|entry| entry.starts_with("server.pac_hosts")),
+        "{:?}",
+        server.non_defaults()
     );
     server.shutdown().await;
 }

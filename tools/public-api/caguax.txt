@@ -730,6 +730,7 @@ pub caguax::settings::ServerSettings::log_traffic: bool
 pub caguax::settings::ServerSettings::max_connections: usize
 pub caguax::settings::ServerSettings::max_head_bytes: usize
 pub caguax::settings::ServerSettings::max_headers: usize
+pub caguax::settings::ServerSettings::pac_hosts: alloc::vec::Vec<alloc::string::String>
 pub caguax::settings::ServerSettings::record: core::option::Option<std::path::PathBuf>
 pub caguax::settings::ServerSettings::relay_buffer: usize
 pub caguax::settings::ServerSettings::warn_interval: core::time::Duration
@@ -1204,6 +1205,7 @@ pub caguax::ServerSettings::log_traffic: bool
 pub caguax::ServerSettings::max_connections: usize
 pub caguax::ServerSettings::max_head_bytes: usize
 pub caguax::ServerSettings::max_headers: usize
+pub caguax::ServerSettings::pac_hosts: alloc::vec::Vec<alloc::string::String>
 pub caguax::ServerSettings::record: core::option::Option<std::path::PathBuf>
 pub caguax::ServerSettings::relay_buffer: usize
 pub caguax::ServerSettings::warn_interval: core::time::Duration

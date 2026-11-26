@@ -217,6 +217,10 @@ pub struct ServerSettings {
     /// A file receiving the TLS secrets of every TLS connection the proxy makes or ends, in the
     /// `SSLKEYLOGFILE` format. A secret itself; listed by [`non_defaults`](Self::non_defaults).
     pub keylog: Option<PathBuf>,
+    /// Host names, besides IP literals and `localhost`, under which `/proxy.pac` is served
+    /// (default none). A request naming another host is `421`, so a page that rebinds its own name
+    /// to the proxy's port cannot read the rules; listed by [`non_defaults`](Self::non_defaults).
+    pub pac_hosts: Vec<String>,
     /// The interception certificate authority.
     pub ca: CaSettings,
     /// How intercepted tunnels get their certificates.
@@ -255,6 +259,7 @@ impl Default for ServerSettings {
             record: None,
             log_traffic: false,
             keylog: None,
+            pac_hosts: Vec::new(),
             ca: CaSettings::default(),
             intercept: InterceptSettings::default(),
             relay_buffer: 64 * 1024,
@@ -332,6 +337,12 @@ impl ServerSettings {
         }
         if self.keylog.is_some() {
             found.push("server.keylog = (a file of TLS secrets)".into());
+        }
+        if !self.pac_hosts.is_empty() {
+            found.push(alloc::format!(
+                "server.pac_hosts = {}",
+                self.pac_hosts.join(", ")
+            ));
         }
         if self.record.is_some() {
             found.push("server.record = (a capture file of relayed traffic)".into());

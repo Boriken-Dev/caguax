@@ -169,6 +169,34 @@ pub(super) async fn handle(client: ClientConnection, request: Request<Incoming>)
     text(StatusCode::BAD_REQUEST, "malformed request line\n")
 }
 
+/// The host of a `Host` header value: no port, no brackets.
+fn host_name(value: &str) -> &str {
+    let value = value.trim();
+    if let Some(rest) = value.strip_prefix('[') {
+        return rest.split(']').next().unwrap_or_default();
+    }
+    match value.rsplit_once(':') {
+        Some((host, port)) if !host.contains(':') && port.bytes().all(|b| b.is_ascii_digit()) => {
+            host
+        }
+        _ => value,
+    }
+}
+
+/// Whether `/proxy.pac` may be answered to a request carrying this `Host`: an IP literal (the
+/// listener's own address included), `localhost`, or a name in `pac_hosts`.
+fn names_the_listener(host: Option<&HeaderValue>, allowed: &[String]) -> bool {
+    let Some(host) = host.and_then(|value| value.to_str().ok()).map(host_name) else {
+        return false;
+    };
+    host.parse::<core::net::IpAddr>().is_ok()
+        || host.eq_ignore_ascii_case("localhost")
+        || allowed.iter().any(|name| {
+            name.trim_end_matches('.')
+                .eq_ignore_ascii_case(host.trim_end_matches('.'))
+        })
+}
+
 fn local(client: &ClientConnection, request: &Request<Incoming>) -> Response<Body> {
     let wanted = matches!(*request.method(), Method::GET | Method::HEAD)
         && request.uri().path() == "/proxy.pac";
@@ -176,6 +204,12 @@ fn local(client: &ClientConnection, request: &Request<Incoming>) -> Response<Bod
         return text(StatusCode::NOT_FOUND, "only /proxy.pac is served here\n");
     }
     let state = client.inner.state();
+    if !names_the_listener(request.headers().get(HOST), &state.settings.pac_hosts) {
+        return text(
+            StatusCode::MISDIRECTED_REQUEST,
+            "the proxy answers /proxy.pac only to its own address, localhost or a name in server.pac_hosts\n",
+        );
+    }
     let Some(router) = state.router.router() else {
         return text(StatusCode::NOT_FOUND, "only /proxy.pac is served here\n");
     };

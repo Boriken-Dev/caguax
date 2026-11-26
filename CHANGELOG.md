@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
   key through a new randomly named `0600` file renamed into place instead of a fixed `.new` name.
   `server.record` and a CA key with no `password_env` (also reported by `ca init`) are listed as
   `non-default`.
+- `/proxy.pac` is answered only when `Host` is an IP literal, `localhost` or a name in the new
+  `server.pac_hosts` (listed as `non-default` when set), else `421`.
 - A reload logs every `non-default setting` it leaves in force, as the start does.
 
 ### Added
